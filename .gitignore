@@ -1,0 +1,36 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Build Results
+[Bb]in/
+[Oo]bj/
+
+# Rider and IntelliJ files
+.idea/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.pid
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Resources
+Images/
+
+#Configuration
+appsettings.json
+AssemblyInfo.cs
+
+#Database
+Migrations/
+
+#Publications
+Properties/
