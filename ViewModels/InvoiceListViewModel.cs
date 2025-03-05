@@ -33,7 +33,6 @@ namespace InvoicingApp.ViewModels
             _navigationService = navigationService;
             _pdfService = pdfService;
 
-            // Initialize commands using centralized command classes
             NewInvoiceCommand = new RelayCommand(CreateNewInvoice);
             EditInvoiceCommand = new RelayCommand(EditInvoice, CanEditInvoice);
             DeleteInvoiceCommand = new RelayCommand(DeleteInvoice, CanDeleteInvoice);
@@ -85,7 +84,6 @@ namespace InvoicingApp.ViewModels
             }
         }
 
-        // Statistics properties
         public int TotalInvoiceCount => Invoices?.Count ?? 0;
         public int PaidInvoiceCount => Invoices?.Count(i => i.IsPaid) ?? 0;
         public int UnpaidInvoiceCount => Invoices?.Count(i => !i.IsPaid) ?? 0;
@@ -93,7 +91,6 @@ namespace InvoicingApp.ViewModels
         public decimal PaidAmount => Invoices?.Where(i => i.IsPaid).Sum(i => i.TotalGross) ?? 0;
         public decimal UnpaidAmount => Invoices?.Where(i => !i.IsPaid).Sum(i => i.TotalGross) ?? 0;
 
-        // Commands
         public ICommand NewInvoiceCommand { get; }
         public ICommand EditInvoiceCommand { get; }
         public ICommand DeleteInvoiceCommand { get; }
@@ -120,9 +117,7 @@ namespace InvoicingApp.ViewModels
                         TotalGross = i.TotalGross,
                         PaymentStatus = i.PaymentStatus,
                         PaymentDate = i.PaymentDate,
-                        // Support for payment system
                         PaidAmount = i.PaidAmount,
-                        // RemainingAmount is calculated in the model
                     }).OrderByDescending(i => i.InvoiceDate)
                 );
             }
@@ -199,7 +194,6 @@ namespace InvoicingApp.ViewModels
         {
             if (SelectedInvoice != null)
             {
-                // Use dialog service for consistent UI
                 if (DisplayQuestion(
                     $"Czy na pewno chcesz usunąć fakturę {SelectedInvoice.InvoiceNumber}?",
                     "Potwierdzenie usunięcia"))
@@ -229,7 +223,6 @@ namespace InvoicingApp.ViewModels
             return SelectedInvoice != null;
         }
 
-        // Updated to use the new payment system
         private async void MarkAsPaid()
         {
             if (SelectedInvoice != null)
@@ -240,7 +233,6 @@ namespace InvoicingApp.ViewModels
                     var invoice = await _invoiceService.GetInvoiceByIdAsync(SelectedInvoice.Id);
                     if (invoice != null)
                     {
-                        // Create full payment
                         var payment = new Payment
                         {
                             Date = DateTime.Now,
@@ -249,18 +241,15 @@ namespace InvoicingApp.ViewModels
                             Notes = "Płatność całkowita"
                         };
 
-                        // Use new payment system
                         invoice.Payments.Add(payment);
                         invoice.PaymentStatus = PaymentStatus.Paid;
 
                         await _invoiceService.SaveInvoiceAsync(invoice);
 
-                        // Update the list item
                         SelectedInvoice.PaymentStatus = PaymentStatus.Paid;
                         SelectedInvoice.PaymentDate = DateTime.Now;
                         SelectedInvoice.PaidAmount = invoice.TotalGross;
 
-                        // Refresh the view
                         _filteredInvoices.Refresh();
                         UpdateStatistics();
 
@@ -317,7 +306,6 @@ namespace InvoicingApp.ViewModels
                     {
                         var pdfPath = await _pdfService.GenerateInvoicePdfAsync(invoice);
 
-                        // Open the PDF
                         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                         {
                             FileName = pdfPath,

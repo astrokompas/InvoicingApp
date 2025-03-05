@@ -38,7 +38,6 @@ namespace InvoicingApp.ViewModels
             _navigationService = navigationService;
             _backupService = backupService;
 
-            // Use centralized command classes - no more duplicate implementations
             SaveCompanyDataCommand = new RelayCommand(SaveCompanyData, () => HasUnsavedChanges);
             SaveSettingsCommand = new RelayCommand(SaveSettings, () => HasUnsavedChanges);
             SelectLogoCommand = new RelayCommand(SelectLogo);
@@ -50,12 +49,10 @@ namespace InvoicingApp.ViewModels
             BackupDataCommand = new AsyncRelayCommand(BackupData);
             RestoreDataCommand = new AsyncRelayCommand(RestoreData);
 
-            // Initialize empty collections
             _vatRates = new ObservableCollection<string>();
             _currencies = new ObservableCollection<string>();
         }
 
-        // IAsyncInitializable implementation
         public async Task InitializeAsync()
         {
             try
@@ -140,7 +137,6 @@ namespace InvoicingApp.ViewModels
             }
         }
 
-        // Company properties for easy binding
         public string CompanyName
         {
             get => Settings?.CompanyName;
@@ -239,7 +235,6 @@ namespace InvoicingApp.ViewModels
             }
         }
 
-        // Retention period options
         public ObservableCollection<RetentionOption> RetentionOptions { get; } = new ObservableCollection<RetentionOption>
         {
             new RetentionOption { Days = 0, DisplayName = "Nigdy nie usuwaj" },
@@ -249,7 +244,6 @@ namespace InvoicingApp.ViewModels
             new RetentionOption { Days = 360, DisplayName = "360 dni" }
         };
 
-        // Commands
         public ICommand SaveCompanyDataCommand { get; }
         public ICommand SaveSettingsCommand { get; }
         public ICommand SelectLogoCommand { get; }
@@ -268,11 +262,9 @@ namespace InvoicingApp.ViewModels
 
             LogoPath = Settings.CompanyLogoPath;
 
-            // Initialize collections
             VatRates = new ObservableCollection<string>(settings.VatRates);
             Currencies = new ObservableCollection<string>(settings.Currencies);
 
-            // Reset unsaved changes flag
             HasUnsavedChanges = false;
         }
 
@@ -308,7 +300,7 @@ namespace InvoicingApp.ViewModels
                 try
                 {
                     IsLoading = true;
-                    // Update settings with current collections
+
                     Settings.VatRates = new List<string>(VatRates);
                     Settings.Currencies = new List<string>(Currencies);
 
@@ -335,7 +327,7 @@ namespace InvoicingApp.ViewModels
                 try
                 {
                     IsLoading = true;
-                    // Update settings with current collections
+
                     Settings.VatRates = new List<string>(VatRates);
                     Settings.Currencies = new List<string>(Currencies);
                     Settings.CompanyLogoPath = LogoPath;

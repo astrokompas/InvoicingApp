@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using InvoicingApp.Pages;
 using InvoicingApp.ViewModels;
 using InvoicingApp.Models;
+using System.Diagnostics;
 
 namespace InvoicingApp.Services
 {
@@ -18,9 +19,10 @@ namespace InvoicingApp.Services
 
         public object CurrentViewModel { get; private set; }
 
-        public NavigationService(Frame frame)
+        public NavigationService(Frame frame, IServiceProvider serviceProvider)
         {
-            _frame = frame;
+            _frame = frame ?? throw new ArgumentNullException(nameof(frame));
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _navigationHistory = new Stack<NavigationHistoryEntry>();
 
             // Register ViewModel -> View mappings
@@ -35,11 +37,6 @@ namespace InvoicingApp.Services
             };
         }
 
-        public NavigationService(Frame frame, IServiceProvider serviceProvider) : this(frame)
-        {
-            _serviceProvider = serviceProvider;
-        }
-
         // Synchronous navigation methods
         public void NavigateTo<TViewModel>(NavigationParameter parameter = null) where TViewModel : class
         {
@@ -48,7 +45,6 @@ namespace InvoicingApp.Services
 
         public void NavigateTo(Type viewModelType, NavigationParameter parameter = null)
         {
-            // Call async method but don't await it
             _ = NavigateToAsyncInternal(viewModelType, parameter);
         }
 
@@ -65,65 +61,59 @@ namespace InvoicingApp.Services
 
         private async Task NavigateToAsyncInternal(Type viewModelType, NavigationParameter parameter = null)
         {
-            if (!_viewModelToViewMapping.TryGetValue(viewModelType, out Type viewType))
+            try
             {
-                throw new ArgumentException($"No view found for ViewModel type {viewModelType.Name}");
+                if (!_viewModelToViewMapping.TryGetValue(viewModelType, out Type viewType))
+                {
+                    throw new ArgumentException($"No view found for ViewModel type {viewModelType.Name}");
+                }
+
+                // Create view and view model
+                Page view = _serviceProvider.GetService(viewType) as Page;
+                BaseViewModel viewModel = _serviceProvider.GetService(viewModelType) as BaseViewModel;
+
+                if (view == null)
+                {
+                    throw new InvalidOperationException($"Failed to create view of type {viewType.Name}");
+                }
+
+                if (viewModel == null)
+                {
+                    throw new InvalidOperationException($"Failed to create ViewModel of type {viewModelType.Name}");
+                }
+
+                // Store current view model
+                CurrentViewModel = viewModel;
+
+                // Apply parameters
+                if (parameter != null && viewModel is IParameterizedViewModel paramViewModel)
+                {
+                    paramViewModel.ApplyParameter(parameter);
+                }
+
+                // Set data context
+                view.DataContext = viewModel;
+
+                // Add to navigation history
+                _navigationHistory.Push(new NavigationHistoryEntry
+                {
+                    ViewModelType = viewModelType,
+                    Parameter = parameter
+                });
+
+                // Navigate to view
+                _frame.Navigate(view);
+
+                // Initialize async view model
+                if (viewModel is IAsyncInitializable asyncViewModel)
+                {
+                    await asyncViewModel.InitializeAsync();
+                }
             }
-
-            // Create view and view model
-            Page view;
-            BaseViewModel viewModel;
-
-            if (_serviceProvider != null)
+            catch (Exception ex)
             {
-                // Use dependency injection
-                view = _serviceProvider.GetService(viewType) as Page;
-                viewModel = _serviceProvider.GetService(viewModelType) as BaseViewModel;
-            }
-            else
-            {
-                // Create directly
-                view = Activator.CreateInstance(viewType) as Page;
-                // Simple activation without dependencies - this would need more logic
-                viewModel = Activator.CreateInstance(viewModelType) as BaseViewModel;
-            }
-
-            if (view == null)
-            {
-                throw new InvalidOperationException($"Failed to create view of type {viewType.Name}");
-            }
-
-            if (viewModel == null)
-            {
-                throw new InvalidOperationException($"Failed to create ViewModel of type {viewModelType.Name}");
-            }
-
-            // Store current view model
-            CurrentViewModel = viewModel;
-
-            // Apply parameters if needed
-            if (parameter != null && viewModel is IParameterizedViewModel paramViewModel)
-            {
-                paramViewModel.ApplyParameter(parameter);
-            }
-
-            // Set data context
-            view.DataContext = viewModel;
-
-            // Add to navigation history
-            _navigationHistory.Push(new NavigationHistoryEntry
-            {
-                ViewModelType = viewModelType,
-                Parameter = parameter
-            });
-
-            // Navigate to view
-            _frame.Navigate(view);
-
-            // Initialize async view model if needed
-            if (viewModel is IAsyncInitializable asyncViewModel)
-            {
-                await asyncViewModel.InitializeAsync();
+                Debug.WriteLine($"Navigation error: {ex.Message}");
+                throw;
             }
         }
 

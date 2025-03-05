@@ -31,7 +31,7 @@ namespace InvoicingApp.Models
         public bool ResetNumberingYearly { get; set; } = true;
 
         // Data retention
-        public int InvoiceRetentionDays { get; set; } = 0; // 0 means never delete
+        public int InvoiceRetentionDays { get; set; } = 0;
         public class RetentionOption
         {
             public int Days { get; set; }

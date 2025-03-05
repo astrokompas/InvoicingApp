@@ -12,15 +12,15 @@ namespace InvoicingApp.ViewModels
         private readonly INavigationService _navigationService;
         private string _activeView;
         private bool _isInitialized = false;
+        private bool _isNavigating = false;
 
         public MainWindowViewModel(
             INavigationService navigationService,
             IDialogService dialogService)
             : base(dialogService)
         {
-            _navigationService = navigationService;
+            _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
 
-            // Initialize commands
             NavigateToInvoicesCommand = new AsyncRelayCommand(NavigateToInvoicesAsync);
             NavigateToClientsCommand = new AsyncRelayCommand(NavigateToClientsAsync);
             NavigateToReportsCommand = new AsyncRelayCommand(NavigateToReportsAsync);
@@ -40,11 +40,12 @@ namespace InvoicingApp.ViewModels
 
         public async Task NavigateToInvoicesAsync()
         {
-            if (_isInitialized && ActiveView == "Invoices")
+            if (_isNavigating || (_isInitialized && ActiveView == "Invoices"))
                 return;
 
             try
             {
+                _isNavigating = true;
                 IsLoading = true;
                 await _navigationService.NavigateToAsync<InvoiceListViewModel>();
                 ActiveView = "Invoices";
@@ -52,78 +53,85 @@ namespace InvoicingApp.ViewModels
             }
             catch (Exception ex)
             {
-                // Log or display error
                 System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
+                DisplayError("Navigation failed. Please try again.", "Navigation Error");
             }
             finally
             {
                 IsLoading = false;
+                _isNavigating = false;
             }
         }
 
         private async Task NavigateToClientsAsync()
         {
-            if (ActiveView == "Clients")
+            if (_isNavigating || ActiveView == "Clients")
                 return;
 
             try
             {
+                _isNavigating = true;
                 IsLoading = true;
                 await _navigationService.NavigateToAsync<ClientsViewModel>();
                 ActiveView = "Clients";
             }
             catch (Exception ex)
             {
-                // Log or display error
                 System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
+                DisplayError("Navigation failed. Please try again.", "Navigation Error");
             }
             finally
             {
                 IsLoading = false;
+                _isNavigating = false;
             }
         }
 
         private async Task NavigateToReportsAsync()
         {
-            if (ActiveView == "Reports")
+            if (_isNavigating || ActiveView == "Reports")
                 return;
 
             try
             {
+                _isNavigating = true;
                 IsLoading = true;
                 await _navigationService.NavigateToAsync<ReportsViewModel>();
                 ActiveView = "Reports";
             }
             catch (Exception ex)
             {
-                // Log or display error
                 System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
+                DisplayError("Navigation failed. Please try again.", "Navigation Error");
             }
             finally
             {
                 IsLoading = false;
+                _isNavigating = false;
             }
         }
 
         private async Task NavigateToSettingsAsync()
         {
-            if (ActiveView == "Settings")
+            if (_isNavigating || ActiveView == "Settings")
                 return;
 
             try
             {
+                _isNavigating = true;
                 IsLoading = true;
                 await _navigationService.NavigateToAsync<SettingsViewModel>();
                 ActiveView = "Settings";
             }
             catch (Exception ex)
             {
-                // Log or display error
                 System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
+                DisplayError("Navigation failed. Please try again.", "Navigation Error");
             }
             finally
             {
                 IsLoading = false;
+                _isNavigating = false;
             }
         }
     }

@@ -34,7 +34,7 @@ namespace InvoicingApp.Services
                     CompanyTaxID = "1234567890",
                     InvoicePrefix = "FV",
                     DefaultPaymentDays = 14,
-                    InvoiceRetentionDays = 0 // Never delete by default
+                    InvoiceRetentionDays = 0
                 };
 
                 await _settingsStorage.SaveAsync(settings);
@@ -62,7 +62,7 @@ namespace InvoicingApp.Services
 
         public int[] GetInvoiceRetentionOptions()
         {
-            return new[] { 0, 90, 180, 270, 360 }; // 0 = never delete
+            return new[] { 0, 90, 180, 270, 360 };
         }
     }
 }

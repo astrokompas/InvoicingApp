@@ -96,9 +96,17 @@
                 <Border Grid.Column="0" Background="#0A1622">
                     <StackPanel Margin="0,20,0,0">
                         <!-- Invoices Navigation Button -->
-                        <Button Style="{StaticResource NavButtonStyle}" 
-                                Command="{Binding NavigateToInvoicesCommand}"
-                                Tag="Invoices">
+                        <Button Command="{Binding NavigateToInvoicesCommand}">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ActiveView}" Value="Invoices">
+                                            <Setter Property="Background" Value="#1A2535"/>
+                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="📄" FontSize="18" Margin="0,0,10,0"/>
                                 <TextBlock Text="Faktury" FontSize="14"/>
@@ -106,9 +114,17 @@
                         </Button>
 
                         <!-- Clients Navigation Button -->
-                        <Button Style="{StaticResource NavButtonStyle}" 
-                                Command="{Binding NavigateToClientsCommand}"
-                                Tag="Clients">
+                        <Button Command="{Binding NavigateToClientsCommand}">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ActiveView}" Value="Clients">
+                                            <Setter Property="Background" Value="#1A2535"/>
+                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="👥" FontSize="18" Margin="0,0,10,0"/>
                                 <TextBlock Text="Klienci" FontSize="14"/>
@@ -116,9 +132,17 @@
                         </Button>
 
                         <!-- Reports Navigation Button -->
-                        <Button Style="{StaticResource NavButtonStyle}" 
-                                Command="{Binding NavigateToReportsCommand}"
-                                Tag="Reports">
+                        <Button Command="{Binding NavigateToReportsCommand}">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ActiveView}" Value="Reports">
+                                            <Setter Property="Background" Value="#1A2535"/>
+                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="📊" FontSize="18" Margin="0,0,10,0"/>
                                 <TextBlock Text="Raporty" FontSize="14"/>
@@ -126,9 +150,17 @@
                         </Button>
 
                         <!-- Settings Navigation Button -->
-                        <Button Style="{StaticResource NavButtonStyle}" 
-                                Command="{Binding NavigateToSettingsCommand}"
-                                Tag="Settings">
+                        <Button Command="{Binding NavigateToSettingsCommand}">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ActiveView}" Value="Settings">
+                                            <Setter Property="Background" Value="#1A2535"/>
+                                            <Setter Property="FontWeight" Value="SemiBold"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="⚙️" FontSize="18" Margin="0,0,10,0"/>
                                 <TextBlock Text="Ustawienia" FontSize="14"/>
@@ -143,6 +175,8 @@
                        NavigationUIVisibility="Hidden" 
                        Background="Transparent"/>
             </Grid>
+
+            <!-- Global Loading Overlay -->
             <Grid Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Grid.ColumnSpan="2"
                   Background="#80000000" 
                   Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"

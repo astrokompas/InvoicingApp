@@ -10,12 +10,14 @@ namespace InvoicingApp.Services
     public class ClientService : IClientService
     {
         private readonly IDataStorage<Client> _clientStorage;
-        private readonly IInvoiceService _invoiceService;
+        private readonly IDataStorage<Invoice> _invoiceStorage;
 
-        public ClientService(IDataStorage<Client> clientStorage, IInvoiceService invoiceService)
+        public ClientService(
+            IDataStorage<Client> clientStorage,
+            IDataStorage<Invoice> invoiceStorage)
         {
             _clientStorage = clientStorage;
-            _invoiceService = invoiceService;
+            _invoiceStorage = invoiceStorage;
         }
 
         public async Task<Client> GetClientWithInvoicesAsync(string id)
@@ -23,7 +25,7 @@ namespace InvoicingApp.Services
             var client = await GetClientByIdAsync(id);
             if (client != null)
             {
-                var invoices = await _invoiceService.GetInvoicesByClientIdAsync(id);
+                var invoices = await GetInvoicesByClientIdAsync(id);
                 client.Invoices = invoices.ToList();
             }
             return client;
@@ -55,6 +57,11 @@ namespace InvoicingApp.Services
                 c.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
                 c.TaxID.Contains(searchText, StringComparison.OrdinalIgnoreCase)
             );
+        }
+
+        private async Task<IEnumerable<Invoice>> GetInvoicesByClientIdAsync(string clientId)
+        {
+            return await _invoiceStorage.QueryAsync(i => i.ClientId == clientId);
         }
     }
 }

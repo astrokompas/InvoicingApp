@@ -19,7 +19,7 @@ namespace InvoicingApp.ViewModels
         private Invoice _currentInvoice;
         private ObservableCollection<Client> _availableClients;
         private ObservableCollection<string> _vatRates;
-        private string _editMode = "InvoiceDetails"; // InvoiceDetails, Items, Payment
+        private string _editMode = "InvoiceDetails";
 
         public InvoiceEditorViewModel(
             IInvoiceService invoiceService,
@@ -34,7 +34,6 @@ namespace InvoicingApp.ViewModels
             _settingsService = settingsService;
             _navigationService = navigationService;
 
-            // Initialize with a new invoice or load existing
             _currentInvoice = new Invoice
             {
                 InvoiceNumber = _invoiceService.GenerateNextInvoiceNumber(),
@@ -46,11 +45,9 @@ namespace InvoicingApp.ViewModels
                 PaymentStatus = PaymentStatus.Unpaid
             };
 
-            // Initialize empty collections
             _availableClients = new ObservableCollection<Client>();
             _vatRates = new ObservableCollection<string>();
 
-            // Initialize commands
             AddItemCommand = new RelayCommand(AddItem);
             RemoveItemCommand = new RelayCommand<InvoiceItem>(RemoveItem);
             SaveInvoiceCommand = new RelayCommand(SaveInvoice);
@@ -71,21 +68,17 @@ namespace InvoicingApp.ViewModels
         {
             await RunCommandAsync(async () =>
             {
-                // Load VAT rates from settings
                 var settings = await _settingsService.GetSettingsAsync();
                 VatRates = new ObservableCollection<string>(settings.VatRates);
 
-                // Get clients asynchronously
                 var clients = await _clientService.GetAllClientsAsync();
                 AvailableClients = new ObservableCollection<Client>(clients);
 
-                // Add initial item if needed
                 if (CurrentInvoice.Items.Count == 0)
                 {
                     AddItem();
                 }
 
-                // Update totals
                 CalculateTotals();
             });
         }
@@ -107,7 +100,6 @@ namespace InvoicingApp.ViewModels
             });
         }
 
-        // Properties for binding
         public string AmountInWords
         {
             get
@@ -143,14 +135,12 @@ namespace InvoicingApp.ViewModels
             set => SetProperty(ref _editMode, value);
         }
 
-        // Commands
         public ICommand AddItemCommand { get; }
         public ICommand RemoveItemCommand { get; }
         public ICommand SaveInvoiceCommand { get; }
         public ICommand SwitchModeCommand { get; }
         public ICommand CancelCommand { get; }
 
-        // Methods
         private void AddItem()
         {
             var newItem = new InvoiceItem
@@ -176,7 +166,6 @@ namespace InvoicingApp.ViewModels
 
         private async void SaveInvoice()
         {
-            // Validate invoice
             if (string.IsNullOrWhiteSpace(_currentInvoice.InvoiceNumber))
             {
                 DisplayWarning("Numer faktury jest wymagany", "Błąd walidacji");
@@ -199,16 +188,12 @@ namespace InvoicingApp.ViewModels
             {
                 IsLoading = true;
 
-                // Make sure the client ID is set
                 _currentInvoice.ClientId = _currentInvoice.Client.Id;
 
-                // Save invoice
                 await _invoiceService.SaveInvoiceAsync(_currentInvoice);
 
-                // Show success notification
                 DisplayInformation("Faktura została zapisana pomyślnie", "Zapisano");
 
-                // Navigate back
                 _navigationService.GoBack();
             }
             catch (Exception ex)
@@ -241,7 +226,6 @@ namespace InvoicingApp.ViewModels
 
             foreach (var item in _currentInvoice.Items)
             {
-                // Parse VAT rate (e.g., "23%" to 0.23)
                 if (decimal.TryParse(item.VatRate.TrimEnd('%'), out decimal vatRate))
                 {
                     vatRate = vatRate / 100;
@@ -252,7 +236,6 @@ namespace InvoicingApp.ViewModels
                     totalNet += itemNet;
                     totalVat += itemVat;
 
-                    // Update item totals
                     item.TotalNet = itemNet;
                     item.TotalVat = itemVat;
                     item.TotalGross = itemNet + itemVat;
@@ -263,28 +246,23 @@ namespace InvoicingApp.ViewModels
             _currentInvoice.TotalVat = totalVat;
             _currentInvoice.TotalGross = totalNet + totalVat;
 
-            // Update the payment status based on payments
             UpdatePaymentStatus();
 
-            // Notify about changes
             OnPropertyChanged(nameof(CurrentInvoice));
             OnPropertyChanged(nameof(AmountInWords));
         }
 
         private void UpdatePaymentStatus()
         {
-            // Only update if we have a non-null invoice
             if (_currentInvoice == null)
                 return;
 
-            // Calculate total paid amount
             decimal paidAmount = 0;
             foreach (var payment in _currentInvoice.Payments)
             {
                 paidAmount += payment.Amount;
             }
 
-            // Determine the payment status
             if (paidAmount >= _currentInvoice.TotalGross)
             {
                 _currentInvoice.PaymentStatus = PaymentStatus.Paid;

@@ -35,7 +35,6 @@ namespace InvoicingApp.Services
             PdfPage page = document.AddPage();
             page.Size = PdfSharp.PageSize.A4;
 
-            // Get an XGraphics object for drawing
             XGraphics gfx = XGraphics.FromPdfPage(page);
 
             // Define fonts
@@ -46,7 +45,7 @@ namespace InvoicingApp.Services
             XFont smallFont = new XFont("Arial", 8);
 
             // Define colors
-            XColor mainColor = XColor.FromArgb(62, 108, 178); // #3E6CB2
+            XColor mainColor = XColor.FromArgb(62, 108, 178);
             XColor blackColor = XColor.FromArgb(0, 0, 0);
 
             // Page margins
@@ -57,7 +56,7 @@ namespace InvoicingApp.Services
 
             double currentY = marginTop;
 
-            // Draw company logo if available
+            // Draw company logo
             if (!string.IsNullOrEmpty(settings.CompanyLogoPath) && File.Exists(settings.CompanyLogoPath))
             {
                 try
@@ -70,7 +69,7 @@ namespace InvoicingApp.Services
                 }
                 catch (Exception)
                 {
-                    // If loading the logo fails, just skip it
+
                 }
             }
 
@@ -79,7 +78,6 @@ namespace InvoicingApp.Services
             gfx.DrawString(title, titleFont, new XSolidBrush(mainColor), marginLeft, currentY);
             currentY += 30;
 
-            // Draw horizontal line
             gfx.DrawLine(new XPen(mainColor, 1), marginLeft, currentY, marginRight, currentY);
             currentY += 15;
 
@@ -156,7 +154,6 @@ namespace InvoicingApp.Services
             bool alternateRow = false;
             foreach (var client in report.ClientBreakdown)
             {
-                // Check if we need to add a new page
                 if (tableY + rowHeight > page.Height - 100)
                 {
                     // Add new page

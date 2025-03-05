@@ -29,7 +29,7 @@ namespace InvoicingApp.Services
             var invoice = await GetInvoiceByIdAsync(id);
             if (invoice != null && !string.IsNullOrEmpty(invoice.ClientId))
             {
-                // Load the client data - but avoid circular references
+                // Load the client data
                 invoice.Client = await _clientStorage.GetByIdAsync(invoice.ClientId);
             }
             return invoice;
@@ -56,7 +56,26 @@ namespace InvoicingApp.Services
 
         public async Task<IEnumerable<Invoice>> GetAllInvoicesAsync()
         {
-            return await _invoiceStorage.GetAllAsync();
+            try
+            {
+                var invoices = await _invoiceStorage.GetAllAsync();
+
+                // Eagerly load client information
+                foreach (var invoice in invoices)
+                {
+                    if (!string.IsNullOrEmpty(invoice.ClientId))
+                    {
+                        invoice.Client = await _clientStorage.GetByIdAsync(invoice.ClientId);
+                    }
+                }
+
+                return invoices;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting all invoices: {ex.Message}");
+                return new List<Invoice>();
+            }
         }
 
         public async Task<Invoice> GetInvoiceByIdAsync(string id)
@@ -104,7 +123,6 @@ namespace InvoicingApp.Services
             if (allInvoices.Count > 0)
             {
                 // Extract the sequence number from the latest invoice
-                // Assuming format like "FV/123/2025"
                 var latestInvoice = allInvoices
                     .Where(i => i.InvoiceNumber.Contains($"/{year}"))
                     .OrderByDescending(i => i.InvoiceDate)

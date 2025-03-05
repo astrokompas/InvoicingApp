@@ -33,11 +33,9 @@ namespace InvoicingApp.ViewModels
             _navigationService = navigationService;
             _settingsService = settingsService;
 
-            // Initialize commands
             AddPaymentCommand = new AsyncRelayCommand(AddPayment, CanAddPayment);
             CancelCommand = new RelayCommand(Cancel);
 
-            // Initialize empty collections
             _paymentMethods = new ObservableCollection<string>();
         }
 
@@ -91,20 +89,16 @@ namespace InvoicingApp.ViewModels
                 _invoiceId = parameter.Get<string>("InvoiceId");
             }
         }
-
-        // IAsyncInitializable implementation
         public async Task InitializeAsync()
         {
             try
             {
                 IsLoading = true;
 
-                // Load settings
                 var settings = await _settingsService.GetSettingsAsync();
                 PaymentMethods = new ObservableCollection<string>(settings.PaymentMethods);
                 PaymentMethod = settings.DefaultPaymentMethod;
 
-                // Load invoice if ID was provided
                 if (!string.IsNullOrEmpty(_invoiceId))
                 {
                     await LoadInvoiceAsync(_invoiceId);
@@ -122,10 +116,8 @@ namespace InvoicingApp.ViewModels
 
         private async Task LoadInvoiceAsync(string invoiceId)
         {
-            // Load invoice
             Invoice = await _invoiceService.GetInvoiceByIdAsync(invoiceId);
 
-            // Set default payment amount to remaining amount
             PaymentAmount = Invoice?.RemainingAmount ?? 0;
         }
 
@@ -141,7 +133,6 @@ namespace InvoicingApp.ViewModels
                     return;
                 }
 
-                // Create new payment
                 var payment = new Payment
                 {
                     Date = PaymentDate,
@@ -150,19 +141,14 @@ namespace InvoicingApp.ViewModels
                     Notes = PaymentNotes
                 };
 
-                // Add payment to invoice
                 Invoice.Payments.Add(payment);
 
-                // Update payment status
                 UpdatePaymentStatus();
 
-                // Save invoice
                 await _invoiceService.SaveInvoiceAsync(Invoice);
 
-                // Show success message
                 DisplayInformation("Płatność została dodana pomyślnie.", "Płatność dodana");
 
-                // Go back
                 _navigationService.GoBack();
             }
             catch (Exception ex)

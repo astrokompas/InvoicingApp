@@ -29,7 +29,7 @@ namespace InvoicingApp.Services
                 .Where(i => i.InvoiceDate >= startDate && i.InvoiceDate <= endDate)
                 .ToList();
 
-            // Apply client filter if specified
+            // Apply client filter
             if (!string.IsNullOrEmpty(clientId))
             {
                 filteredInvoices = filteredInvoices

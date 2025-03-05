@@ -21,7 +21,6 @@ namespace InvoicingApp.ViewModels
         private ICollectionView _filteredClients;
         private Client _selectedClient;
 
-        // For adding/editing clients
         private Client _currentClient = new Client();
         private bool _isEditing;
         private bool _hasClients;
@@ -35,7 +34,6 @@ namespace InvoicingApp.ViewModels
             _clientService = clientService;
             _navigationService = navigationService;
 
-            // Initialize commands with centralized command classes
             AddClientCommand = new RelayCommand(AddClient, CanAddClient);
             EditClientCommand = new RelayCommand(EditClient, CanEditClient);
             DeleteClientCommand = new RelayCommand(DeleteClient, CanDeleteClient);
@@ -44,11 +42,9 @@ namespace InvoicingApp.ViewModels
             ClearSearchCommand = new RelayCommand(ClearSearch);
             RefreshCommand = new RelayCommand(Refresh);
 
-            // Initialize empty collection
             Clients = new ObservableCollection<Client>();
         }
 
-        // IAsyncInitializable implementation
         public async Task InitializeAsync()
         {
             try
@@ -116,19 +112,15 @@ namespace InvoicingApp.ViewModels
             get => _isEditing;
             set => SetProperty(ref _isEditing, value);
         }
-
-        // Added property to control empty state visibility
         public bool HasClients
         {
             get => _hasClients;
             set => SetProperty(ref _hasClients, value);
         }
 
-        // Statistics
         public int TotalClientCount => Clients?.Count ?? 0;
         public int ActiveClientCount => Clients?.Count(c => c.IsActive) ?? 0;
 
-        // Commands
         public ICommand AddClientCommand { get; }
         public ICommand EditClientCommand { get; }
         public ICommand DeleteClientCommand { get; }
@@ -173,7 +165,6 @@ namespace InvoicingApp.ViewModels
         {
             if (SelectedClient != null)
             {
-                // Create a copy for editing
                 CurrentClient = new Client
                 {
                     Id = SelectedClient.Id,
@@ -199,7 +190,6 @@ namespace InvoicingApp.ViewModels
         {
             if (SelectedClient != null)
             {
-                // Use centralized dialog service for consistent UI
                 if (DisplayQuestion($"Czy na pewno chcesz usunąć klienta {SelectedClient.Name}?",
                     "Potwierdzenie usunięcia"))
                 {
@@ -235,7 +225,6 @@ namespace InvoicingApp.ViewModels
                 {
                     IsLoading = true;
 
-                    // Validate client data
                     if (string.IsNullOrWhiteSpace(CurrentClient.Name))
                     {
                         DisplayWarning("Nazwa klienta jest wymagana.", "Błąd walidacji");
@@ -248,17 +237,14 @@ namespace InvoicingApp.ViewModels
                         return;
                     }
 
-                    // Save client
                     await _clientService.SaveClientAsync(CurrentClient);
 
-                    // If it's a new client, add it to the collection
                     if (string.IsNullOrEmpty(CurrentClient.Id))
                     {
                         Clients.Add(CurrentClient);
                     }
                     else
                     {
-                        // Update the existing client in the collection
                         int index = Clients.IndexOf(SelectedClient);
                         if (index >= 0)
                         {

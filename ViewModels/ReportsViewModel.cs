@@ -30,7 +30,6 @@ namespace InvoicingApp.ViewModels
             _clientService = clientService;
             _reportPDFService = new ReportPDFService(settingsService);
 
-            // Use centralized command classes
             RefreshReportCommand = new AsyncRelayCommand(RefreshReport);
             ExportReportCommand = new AsyncRelayCommand(ExportReport);
 
@@ -96,7 +95,6 @@ namespace InvoicingApp.ViewModels
             {
                 Clients.Clear();
 
-                // Add "All Clients" option
                 Clients.Add(new Client { Id = null, Name = "Wszyscy klienci" });
 
                 var clients = await _clientService.GetAllClientsAsync();
@@ -105,7 +103,7 @@ namespace InvoicingApp.ViewModels
                     Clients.Add(client);
                 }
 
-                SelectedClient = Clients[0]; // Select "All Clients" by default
+                SelectedClient = Clients[0];
             }
             catch (Exception ex)
             {
@@ -153,7 +151,6 @@ namespace InvoicingApp.ViewModels
 
                 var pdfPath = await _reportPDFService.GenerateReportPdfAsync(ReportSummary);
 
-                // Open the PDF
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = pdfPath,

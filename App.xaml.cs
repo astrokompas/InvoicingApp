@@ -34,7 +34,6 @@ namespace InvoicingApp
             EnsureDirectoryExists(Path.Combine(appDataPath, "Invoices"));
             EnsureDirectoryExists(Path.Combine(appDataPath, "Clients"));
 
-            // Register dialog service first since it's used in many places
             services.AddSingleton<IDialogService, DialogService>();
 
             // Data Storage
@@ -45,34 +44,23 @@ namespace InvoicingApp
             services.AddSingleton<IDataStorage<AppSettings>>(
                 new JsonStorage<AppSettings>(appDataPath));
 
-            // Services
+            // Core Services
             services.AddSingleton<ISettingsService, SettingsService>();
-
-            // First register with interfaces to avoid circular dependencies
-            services.AddSingleton<IInvoiceService, InvoiceService>();
             services.AddSingleton<IClientService, ClientService>();
+            services.AddSingleton<IInvoiceService, InvoiceService>();
+            services.AddSingleton<IReportService, ReportService>();
+            services.AddSingleton<IPDFService, PDFService>();
 
-            // Fix services with dependencies
+            // Additional Services
             services.AddSingleton<IBackupService>(sp =>
                 new BackupService(
                     appDataPath,
                     sp.GetRequiredService<IDialogService>()
                 )
             );
-            services.AddSingleton<IPDFService, PDFService>();
-            services.AddSingleton<IReportService, ReportService>();
             services.AddSingleton<ReportPDFService>();
 
-            // Register views
-            services.AddTransient<MainWindow>();
-            services.AddTransient<InvoiceListPage>();
-            services.AddTransient<InvoiceEditorPage>();
-            services.AddTransient<ClientsPage>();
-            services.AddTransient<ReportsPage>();
-            services.AddTransient<SettingsPage>();
-            services.AddTransient<AddPaymentPage>();
-
-            // Register view models
+            // View Models
             services.AddTransient<MainWindowViewModel>();
             services.AddTransient<InvoiceListViewModel>();
             services.AddTransient<InvoiceEditorViewModel>();
@@ -81,12 +69,15 @@ namespace InvoicingApp
             services.AddTransient<SettingsViewModel>();
             services.AddTransient<AddPaymentViewModel>();
 
-            // Navigation Service
-            services.AddSingleton<INavigationService>(provider =>
-            {
-                var mainWindow = provider.GetRequiredService<MainWindow>();
-                return new NavigationService(mainWindow.MainFrame, provider);
-            });
+            // Views
+            services.AddTransient<InvoiceListPage>();
+            services.AddTransient<InvoiceEditorPage>();
+            services.AddTransient<ClientsPage>();
+            services.AddTransient<ReportsPage>();
+            services.AddTransient<SettingsPage>();
+            services.AddTransient<AddPaymentPage>();
+
+            services.AddSingleton<MainWindow>();
         }
 
         private void EnsureDirectoryExists(string path)
@@ -97,30 +88,27 @@ namespace InvoicingApp
             }
         }
 
+
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
-            // Initialize MainWindow
             var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
-            mainWindow.DataContext = _serviceProvider.GetRequiredService<MainWindowViewModel>();
+
+            var navigationService = new NavigationService(mainWindow.MainFrame, _serviceProvider);
+
+            var mainWindowViewModel = new MainWindowViewModel(navigationService,
+                                                              _serviceProvider.GetRequiredService<IDialogService>());
+
+            mainWindow.DataContext = mainWindowViewModel;
+
             mainWindow.Show();
 
-            // Get NavigationService
-            var navigationService = _serviceProvider.GetRequiredService<INavigationService>();
-
-            Task.Run(async () =>
+            navigationService.NavigateToAsync<InvoiceListViewModel>().ContinueWith(_ =>
             {
-                // Navigate to initial view and wait for initialization
-                await navigationService.NavigateToAsync<InvoiceListViewModel>();
-
-                // Access the UI thread to update the active view
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    if (mainWindow.DataContext is MainWindowViewModel viewModel)
-                    {
-                        viewModel.ActiveView = "Invoices";
-                    }
+                    mainWindowViewModel.ActiveView = "Invoices";
                 });
             });
         }

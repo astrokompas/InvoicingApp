@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using System.Windows.Input;
+using System.Windows;
 using InvoicingApp.Services;
 
 namespace InvoicingApp.ViewModels
@@ -15,7 +15,7 @@ namespace InvoicingApp.ViewModels
 
         public BaseViewModel(IDialogService dialogService)
         {
-            _dialogService = dialogService;
+            _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
         }
 
         public bool IsLoading
@@ -28,7 +28,15 @@ namespace InvoicingApp.ViewModels
 
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            if (Application.Current?.Dispatcher?.CheckAccess() == false)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName)));
+            }
+            else
+            {
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            }
         }
 
         protected bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string propertyName = null)
@@ -43,6 +51,9 @@ namespace InvoicingApp.ViewModels
 
         protected async Task RunCommandAsync(Func<Task> action)
         {
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
+
             try
             {
                 IsLoading = true;
@@ -50,12 +61,19 @@ namespace InvoicingApp.ViewModels
             }
             catch (Exception ex)
             {
-                DisplayError(ex);
+                HandleException(ex);
             }
             finally
             {
                 IsLoading = false;
             }
+        }
+
+        private void HandleException(Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Exception: {ex.Message}");
+
+            DisplayError(ex);
         }
 
         protected void DisplayError(Exception ex, string title = "Błąd")

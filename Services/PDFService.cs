@@ -36,7 +36,6 @@ namespace InvoicingApp.Services
             PdfPage page = document.AddPage();
             page.Size = PdfSharp.PageSize.A4;
 
-            // Get an XGraphics object for drawing
             XGraphics gfx = XGraphics.FromPdfPage(page);
 
             // Define fonts
@@ -46,7 +45,7 @@ namespace InvoicingApp.Services
             XFont smallFont = new XFont("Arial", 8);
 
             // Define colors
-            XColor mainColor = XColor.FromArgb(62, 108, 178); // #3E6CB2
+            XColor mainColor = XColor.FromArgb(62, 108, 178);
             XColor blackColor = XColor.FromArgb(0, 0, 0);
 
             // Page margins
@@ -57,7 +56,7 @@ namespace InvoicingApp.Services
 
             double currentY = marginTop;
 
-            // Draw company logo if available
+            // Draw company logo
             if (!string.IsNullOrEmpty(settings.CompanyLogoPath) && File.Exists(settings.CompanyLogoPath))
             {
                 try
@@ -70,7 +69,7 @@ namespace InvoicingApp.Services
                 }
                 catch (Exception)
                 {
-                    // If loading the logo fails, just skip it
+
                 }
             }
 
@@ -83,7 +82,7 @@ namespace InvoicingApp.Services
             gfx.DrawLine(new XPen(mainColor, 1), marginLeft, currentY, marginRight, currentY);
             currentY += 15;
 
-            // Draw issue date and other dates
+            // Draw dates
             gfx.DrawString("Data wystawienia:", boldFont, new XSolidBrush(blackColor), marginLeft, currentY);
             gfx.DrawString(invoice.InvoiceDate.ToString("dd.MM.yyyy"), normalFont, new XSolidBrush(blackColor), marginLeft + 120, currentY);
             currentY += 15;
@@ -120,7 +119,6 @@ namespace InvoicingApp.Services
                 gfx.DrawString($"Email: {settings.CompanyEmail}", normalFont, new XSolidBrush(blackColor), marginLeft, currentY);
             }
 
-            // Reset Y position for buyer
             currentY = sellerBuyerBoxTop;
 
             // Buyer box
@@ -142,7 +140,6 @@ namespace InvoicingApp.Services
                 gfx.DrawString($"Email: {invoice.Client.Email}", normalFont, new XSolidBrush(blackColor), rightColumn, currentY);
             }
 
-            // Move to the lower position of both columns
             currentY = Math.Max(currentY, sellerBuyerBoxTop) + 30;
 
             // Draw invoice items table
@@ -174,7 +171,6 @@ namespace InvoicingApp.Services
             {
                 var item = invoice.Items[i];
 
-                // Check if we need to add a new page
                 if (tableY + rowHeight > page.Height - 100)
                 {
                     // Add new page
@@ -278,7 +274,6 @@ namespace InvoicingApp.Services
                 gfx.DrawString("Uwagi:", boldFont, new XSolidBrush(blackColor), marginLeft, currentY);
                 currentY += 15;
 
-                // Split notes into lines to fit the page width
                 foreach (var line in SplitTextToFitWidth(invoice.Notes, normalFont, availableWidth, gfx))
                 {
                     gfx.DrawString(line, normalFont, new XSolidBrush(blackColor), marginLeft, currentY);

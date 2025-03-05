@@ -18,44 +18,27 @@ namespace InvoicingApp
         {
             InitializeComponent();
 
-            // Create navigation and dialog services
-            var navigationService = new NavigationService(MainFrame);
-            var dialogService = new DialogService();
-
-            // Create view model
-            _viewModel = new MainWindowViewModel(navigationService, dialogService);
-            DataContext = _viewModel;
-
-            // Set up event handlers
             KeyDown += MainWindow_KeyDown;
 
-            // Borderless window setup
             WindowStyle = WindowStyle.None;
             AllowsTransparency = true;
 
-            Opacity = 1;
-            Visibility = Visibility.Visible;
             Loaded += MainWindow_Loaded;
             StateChanged += MainWindow_StateChanged;
             MainWindowBorder.SizeChanged += MainWindowBorder_SizeChanged;
             UpdateClipping();
 
-            // Set initial size and position
             Width = 1300;
             Height = 800;
-
             var workArea = SystemParameters.WorkArea;
             Left = (workArea.Width - Width) / 2;
             Top = (workArea.Height - Height) / 2;
         }
 
-        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            _viewModel = DataContext as MainWindowViewModel;
             UpdateClipping();
-
-            // Initialize with the first view - using delay to ensure UI is ready
-            await System.Threading.Tasks.Task.Delay(100);
-            await _viewModel.NavigateToInvoicesAsync();
         }
 
         private void MainWindow_StateChanged(object sender, EventArgs e)
@@ -65,7 +48,6 @@ namespace InvoicingApp
                 Width = 1300;
                 Height = 800;
                 MainWindowBorder.Margin = new Thickness(0);
-
                 var workArea = SystemParameters.WorkArea;
                 Left = (workArea.Width - Width) / 2;
                 Top = (workArea.Height - Height) / 2;
@@ -77,11 +59,9 @@ namespace InvoicingApp
                 Height = workArea.Height;
                 Left = workArea.Left;
                 Top = workArea.Top;
-
                 double taskbarHeight = SystemParameters.PrimaryScreenHeight - workArea.Height;
                 MainWindowBorder.Margin = new Thickness(8, 8, 8, 8 + taskbarHeight);
             }
-
             UpdateClipping();
         }
 
@@ -94,7 +74,7 @@ namespace InvoicingApp
         {
             if (MainWindowBorder.ActualWidth > 0 && MainWindowBorder.ActualHeight > 0)
             {
-                MainWindowBorder.Clip = new RectangleGeometry
+                MainWindowBorder.Clip = new System.Windows.Media.RectangleGeometry
                 {
                     RadiusX = 8,
                     RadiusY = 8,
