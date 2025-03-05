@@ -1,65 +1,76 @@
 ﻿using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using InvoicingApp.Commands;
 using InvoicingApp.Models;
 using InvoicingApp.Services;
 
 namespace InvoicingApp.ViewModels
 {
-    public class ReportsViewModel : INotifyPropertyChanged
+    public class ReportsViewModel : BaseViewModel, IAsyncInitializable
     {
         private readonly IReportService _reportService;
         private readonly IClientService _clientService;
+        private readonly ReportPDFService _reportPDFService;
 
         private DateTime _startDate = DateTime.Today.AddMonths(-1);
         private DateTime _endDate = DateTime.Today;
         private Client _selectedClient;
         private ReportSummary _reportSummary;
-        private bool _isLoading;
 
-        public ReportsViewModel(IReportService reportService, IClientService clientService)
+        public ReportsViewModel(
+            IReportService reportService,
+            IClientService clientService,
+            ISettingsService settingsService,
+            IDialogService dialogService)
+            : base(dialogService)
         {
             _reportService = reportService;
             _clientService = clientService;
+            _reportPDFService = new ReportPDFService(settingsService);
 
+            // Use centralized command classes
             RefreshReportCommand = new AsyncRelayCommand(RefreshReport);
             ExportReportCommand = new AsyncRelayCommand(ExportReport);
 
-            LoadClientsAsync();
-            RefreshReport();
+            Clients = new ObservableCollection<Client>();
+        }
+
+        public async Task InitializeAsync()
+        {
+            try
+            {
+                IsLoading = true;
+                await LoadClientsAsync();
+                await RefreshReport();
+            }
+            catch (Exception ex)
+            {
+                DisplayError(ex, "Błąd podczas inicjalizacji");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         public DateTime StartDate
         {
             get => _startDate;
-            set
-            {
-                _startDate = value;
-                OnPropertyChanged();
-            }
+            set => SetProperty(ref _startDate, value);
         }
 
         public DateTime EndDate
         {
             get => _endDate;
-            set
-            {
-                _endDate = value;
-                OnPropertyChanged();
-            }
+            set => SetProperty(ref _endDate, value);
         }
 
         public Client SelectedClient
         {
             get => _selectedClient;
-            set
-            {
-                _selectedClient = value;
-                OnPropertyChanged();
-            }
+            set => SetProperty(ref _selectedClient, value);
         }
 
         public ReportSummary ReportSummary
@@ -67,22 +78,12 @@ namespace InvoicingApp.ViewModels
             get => _reportSummary;
             set
             {
-                _reportSummary = value;
-                OnPropertyChanged();
+                if (SetProperty(ref _reportSummary, value))
+                    OnPropertyChanged(nameof(PaymentRatio));
             }
         }
 
-        public bool IsLoading
-        {
-            get => _isLoading;
-            set
-            {
-                _isLoading = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public ObservableCollection<Client> Clients { get; } = new ObservableCollection<Client>();
+        public ObservableCollection<Client> Clients { get; }
 
         public string PaymentRatio => $"{ReportSummary?.PaidInvoices ?? 0}/{ReportSummary?.TotalInvoices ?? 0} faktur opłaconych";
 
@@ -106,9 +107,9 @@ namespace InvoicingApp.ViewModels
 
                 SelectedClient = Clients[0]; // Select "All Clients" by default
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Handle error
+                DisplayError(ex, "Błąd podczas ładowania listy klientów");
             }
         }
 
@@ -124,11 +125,11 @@ namespace InvoicingApp.ViewModels
                     SelectedClient?.Id
                 );
 
-                OnPropertyChanged(nameof(PaymentRatio));
+                DisplayInformation("Raport został wygenerowany pomyślnie.", "Raport");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Handle error
+                DisplayError(ex, "Błąd podczas generowania raportu");
             }
             finally
             {
@@ -138,59 +139,37 @@ namespace InvoicingApp.ViewModels
 
         private async Task ExportReport()
         {
-            // Implementation of report export (PDF or Excel)
-            // Not implemented in this sample
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-    }
-
-    // Helper class for async commands
-    public class AsyncRelayCommand : ICommand
-    {
-        private readonly Func<Task> _execute;
-        private readonly Func<bool> _canExecute;
-        private bool _isExecuting;
-
-        public AsyncRelayCommand(Func<Task> execute, Func<bool> canExecute = null)
-        {
-            _execute = execute;
-            _canExecute = canExecute;
-        }
-
-        public bool CanExecute(object parameter)
-        {
-            return !_isExecuting && (_canExecute?.Invoke() ?? true);
-        }
-
-        public async void Execute(object parameter)
-        {
-            if (_isExecuting)
-                return;
-
-            _isExecuting = true;
-            CommandManager.InvalidateRequerySuggested();
-
             try
             {
-                await _execute();
+                IsLoading = true;
+
+                if (ReportSummary == null)
+                {
+                    DisplayWarning(
+                        "Brak danych do eksportu. Proszę wygenerować raport.",
+                        "Eksport raportu");
+                    return;
+                }
+
+                var pdfPath = await _reportPDFService.GenerateReportPdfAsync(ReportSummary);
+
+                // Open the PDF
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = pdfPath,
+                    UseShellExecute = true
+                });
+
+                DisplayInformation("Raport został wyeksportowany do PDF.", "Eksport PDF");
+            }
+            catch (Exception ex)
+            {
+                DisplayError(ex, "Błąd podczas eksportu raportu");
             }
             finally
             {
-                _isExecuting = false;
-                CommandManager.InvalidateRequerySuggested();
+                IsLoading = false;
             }
-        }
-
-        public event EventHandler CanExecuteChanged
-        {
-            add { CommandManager.RequerySuggested += value; }
-            remove { CommandManager.RequerySuggested -= value; }
         }
     }
 }

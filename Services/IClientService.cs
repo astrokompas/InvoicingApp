@@ -11,5 +11,6 @@ namespace InvoicingApp.Services
         Task SaveClientAsync(Client client);
         Task DeleteClientAsync(string id);
         Task<IEnumerable<Client>> SearchClientsAsync(string searchText);
+        Task<Client> GetClientWithInvoicesAsync(string id);
     }
 }

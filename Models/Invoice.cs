@@ -23,8 +23,30 @@ namespace InvoicingApp.Models
         public string PaymentMethod { get; set; } = "Przelew";
         public string BankAccount { get; set; }
         public string Notes { get; set; }
-        public bool IsPaid { get; set; }
-        public DateTime? PaymentDate { get; set; }
+        public bool IsPaid => PaymentStatus == PaymentStatus.Paid;
+        public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Unpaid;
+        public List<Payment> Payments { get; set; } = new List<Payment>();
+        public decimal PaidAmount => Payments?.Sum(p => p.Amount) ?? 0;
+        public decimal RemainingAmount => TotalGross - PaidAmount;
+        public DateTime? PaymentDate => PaymentStatus == PaymentStatus.Paid ?
+            Payments.OrderByDescending(p => p.Date).FirstOrDefault()?.Date : null;
+    }
+
+    public class Payment
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public DateTime Date { get; set; } = DateTime.Now;
+        public decimal Amount { get; set; }
+        public string Method { get; set; } = "Przelew";
+        public string Notes { get; set; }
+    }
+
+    public enum PaymentStatus
+    {
+        Unpaid,
+        PartiallyPaid,
+        Paid,
+        Overdue
     }
 
     public class InvoiceItem

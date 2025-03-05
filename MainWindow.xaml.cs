@@ -4,14 +4,20 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
+using InvoicingApp.Commands;
+using InvoicingApp.ViewModels;
 
 namespace InvoicingApp
 {
     public partial class MainWindow : Window
     {
+        private MainWindowViewModel _viewModel;
+
         public MainWindow()
         {
             InitializeComponent();
+
+            KeyDown += MainWindow_KeyDown;
 
             // Borderless window setup
             WindowStyle = WindowStyle.None;
@@ -97,6 +103,37 @@ namespace InvoicingApp
                 {
                     DragMove();
                 }
+            }
+        }
+
+        private void MainWindow_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (_viewModel == null)
+            {
+                _viewModel = DataContext as MainWindowViewModel;
+                if (_viewModel == null) return;
+            }
+
+            // Navigation shortcuts
+            if (KeyboardShortcutCommands.GoToInvoicesGesture.Matches(null, e))
+            {
+                _viewModel.NavigateToInvoicesCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (KeyboardShortcutCommands.GoToClientsGesture.Matches(null, e))
+            {
+                _viewModel.NavigateToClientsCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (KeyboardShortcutCommands.GoToReportsGesture.Matches(null, e))
+            {
+                _viewModel.NavigateToReportsCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (KeyboardShortcutCommands.GoToSettingsGesture.Matches(null, e))
+            {
+                _viewModel.NavigateToSettingsCommand.Execute(null);
+                e.Handled = true;
             }
         }
 

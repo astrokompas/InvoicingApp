@@ -10,6 +10,24 @@ namespace InvoicingApp.Services
     public class ClientService : IClientService
     {
         private readonly IDataStorage<Client> _clientStorage;
+        private readonly IInvoiceService _invoiceService;
+
+        public ClientService(IDataStorage<Client> clientStorage, IInvoiceService invoiceService)
+        {
+            _clientStorage = clientStorage;
+            _invoiceService = invoiceService;
+        }
+
+        public async Task<Client> GetClientWithInvoicesAsync(string id)
+        {
+            var client = await GetClientByIdAsync(id);
+            if (client != null)
+            {
+                var invoices = await _invoiceService.GetInvoicesByClientIdAsync(id);
+                client.Invoices = invoices.ToList();
+            }
+            return client;
+        }
 
         public ClientService(IDataStorage<Client> clientStorage)
         {

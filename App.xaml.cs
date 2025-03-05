@@ -31,6 +31,7 @@ namespace InvoicingApp
             Resources.Add("StatusToColorConverter", new StatusToColorConverter());
             Resources.Add("BoolToBackgroundConverter", new BoolToBackgroundConverter());
             Resources.Add("NullToAddEditClientConverter", new NullToAddEditClientConverter());
+            Resources.Add("NumberToWordsConverter", new NumberToWordsConverter());
         }
 
         private void ConfigureServices(IServiceCollection services)
@@ -54,11 +55,29 @@ namespace InvoicingApp
                 new JsonStorage<AppSettings>(appDataPath));
 
             // Services
-            services.AddSingleton<IInvoiceService, InvoiceService>();
-            services.AddSingleton<IClientService, ClientService>();
             services.AddSingleton<ISettingsService, SettingsService>();
+            services.AddSingleton<IInvoiceService, InvoiceService>(sp =>
+                new InvoiceService(
+                    sp.GetRequiredService<IDataStorage<Invoice>>(),
+                    sp.GetRequiredService<ISettingsService>()
+                )
+            );
+            services.AddSingleton<IClientService, ClientService>(sp =>
+                new ClientService(
+                    sp.GetRequiredService<IDataStorage<Client>>(),
+                    sp.GetRequiredService<IInvoiceService>()
+                )
+            );
+            services.AddSingleton<IBackupService>(sp =>
+                new BackupService(
+                    appDataPath,
+                    sp.GetRequiredService<IDialogService>()
+                )
+            );
             services.AddSingleton<IPDFService, PDFService>();
             services.AddSingleton<IReportService, ReportService>();
+            services.AddSingleton<ReportPDFService>();
+            services.AddSingleton<IDialogService, DialogService>();
 
             // Register views
             services.AddTransient<MainWindow>();
@@ -67,13 +86,54 @@ namespace InvoicingApp
             services.AddTransient<ClientsPage>();
             services.AddTransient<ReportsPage>();
             services.AddTransient<SettingsPage>();
+            services.AddTransient<AddPaymentPage>();
 
             // Register view models
-            services.AddTransient<InvoiceListViewModel>();
-            services.AddTransient<InvoiceEditorViewModel>();
-            services.AddTransient<ClientsViewModel>();
-            services.AddTransient<ReportsViewModel>();
-            services.AddTransient<SettingsViewModel>();
+            services.AddTransient<MainWindowViewModel>(sp => new MainWindowViewModel(
+                sp.GetRequiredService<INavigationService>(),
+                sp.GetRequiredService<IDialogService>()
+            ));
+
+            services.AddTransient<InvoiceListViewModel>(sp => new InvoiceListViewModel(
+                sp.GetRequiredService<IInvoiceService>(),
+                sp.GetRequiredService<INavigationService>(),
+                sp.GetRequiredService<IPDFService>(),
+                sp.GetRequiredService<IDialogService>()
+            ));
+
+            services.AddTransient<InvoiceEditorViewModel>(sp => new InvoiceEditorViewModel(
+                sp.GetRequiredService<IInvoiceService>(),
+                sp.GetRequiredService<IClientService>(),
+                sp.GetRequiredService<ISettingsService>(),
+                sp.GetRequiredService<IDialogService>()
+            ));
+
+            services.AddTransient<ClientsViewModel>(sp => new ClientsViewModel(
+                sp.GetRequiredService<IClientService>(),
+                sp.GetRequiredService<INavigationService>(),
+                sp.GetRequiredService<IDialogService>()
+            ));
+
+            services.AddTransient<ReportsViewModel>(sp => new ReportsViewModel(
+                sp.GetRequiredService<IReportService>(),
+                sp.GetRequiredService<IClientService>(),
+                sp.GetRequiredService<ISettingsService>(),
+                sp.GetRequiredService<IDialogService>()
+            ));
+
+            services.AddTransient<SettingsViewModel>(sp => new SettingsViewModel(
+                sp.GetRequiredService<ISettingsService>(),
+                sp.GetRequiredService<INavigationService>(),
+                sp.GetRequiredService<IDialogService>(),
+                sp.GetRequiredService<IBackupService>()
+            ));
+
+            services.AddTransient<AddPaymentViewModel>(sp => new AddPaymentViewModel(
+                sp.GetRequiredService<IInvoiceService>(),
+                sp.GetRequiredService<INavigationService>(),
+                sp.GetRequiredService<ISettingsService>(),
+                sp.GetRequiredService<IDialogService>()
+            ));
 
             // Navigation (will be initialized in MainWindow after Frame is created)
             services.AddSingleton<Func<INavigationService>>(provider => () =>

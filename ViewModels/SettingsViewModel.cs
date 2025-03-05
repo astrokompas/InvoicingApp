@@ -1,36 +1,43 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
+using InvoicingApp.Commands;
 using InvoicingApp.Models;
 using InvoicingApp.Services;
 using Microsoft.Win32;
 
 namespace InvoicingApp.ViewModels
 {
-    public class SettingsViewModel : INotifyPropertyChanged
+    public class SettingsViewModel : BaseViewModel
     {
         private readonly ISettingsService _settingsService;
         private readonly INavigationService _navigationService;
+        private readonly IBackupService _backupService;
 
         private AppSettings _settings;
         private ObservableCollection<string> _vatRates;
         private ObservableCollection<string> _currencies;
-        private bool _isLoading;
         private string _newVatRate;
         private string _newCurrency;
         private string _logoPath;
         private bool _hasUnsavedChanges;
 
-        public SettingsViewModel(ISettingsService settingsService, INavigationService navigationService)
+        public SettingsViewModel(
+            ISettingsService settingsService,
+            INavigationService navigationService,
+            IDialogService dialogService,
+            IBackupService backupService)
+            : base(dialogService)
         {
             _settingsService = settingsService;
             _navigationService = navigationService;
+            _backupService = backupService;
 
-            // Initialize commands
+            // Use centralized command classes - no more duplicate implementations
             SaveCompanyDataCommand = new RelayCommand(SaveCompanyData, () => HasUnsavedChanges);
             SaveSettingsCommand = new RelayCommand(SaveSettings, () => HasUnsavedChanges);
             SelectLogoCommand = new RelayCommand(SelectLogo);
@@ -39,6 +46,8 @@ namespace InvoicingApp.ViewModels
             RemoveVatRateCommand = new RelayCommand<string>(RemoveVatRate);
             RemoveCurrencyCommand = new RelayCommand<string>(RemoveCurrency);
             BackCommand = new RelayCommand(NavigateBack, () => !HasUnsavedChanges || ConfirmNavigateAway());
+            BackupDataCommand = new AsyncRelayCommand(BackupData);
+            RestoreDataCommand = new AsyncRelayCommand(RestoreData);
 
             // Load settings
             LoadSettingsAsync();
@@ -49,30 +58,21 @@ namespace InvoicingApp.ViewModels
             get => _settings;
             set
             {
-                _settings = value;
-                OnPropertyChanged();
-                HasUnsavedChanges = true;
+                if (SetProperty(ref _settings, value))
+                    HasUnsavedChanges = true;
             }
         }
 
         public ObservableCollection<string> VatRates
         {
             get => _vatRates;
-            set
-            {
-                _vatRates = value;
-                OnPropertyChanged();
-            }
+            set => SetProperty(ref _vatRates, value);
         }
 
         public ObservableCollection<string> Currencies
         {
             get => _currencies;
-            set
-            {
-                _currencies = value;
-                OnPropertyChanged();
-            }
+            set => SetProperty(ref _currencies, value);
         }
 
         public string NewVatRate
@@ -80,9 +80,8 @@ namespace InvoicingApp.ViewModels
             get => _newVatRate;
             set
             {
-                _newVatRate = value;
-                OnPropertyChanged();
-                CommandManager.InvalidateRequerySuggested();
+                if (SetProperty(ref _newVatRate, value))
+                    CommandManager.InvalidateRequerySuggested();
             }
         }
 
@@ -91,9 +90,8 @@ namespace InvoicingApp.ViewModels
             get => _newCurrency;
             set
             {
-                _newCurrency = value;
-                OnPropertyChanged();
-                CommandManager.InvalidateRequerySuggested();
+                if (SetProperty(ref _newCurrency, value))
+                    CommandManager.InvalidateRequerySuggested();
             }
         }
 
@@ -102,33 +100,23 @@ namespace InvoicingApp.ViewModels
             get => _logoPath;
             set
             {
-                _logoPath = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(HasLogo));
-                HasUnsavedChanges = true;
+                if (SetProperty(ref _logoPath, value))
+                {
+                    OnPropertyChanged(nameof(HasLogo));
+                    HasUnsavedChanges = true;
+                }
             }
         }
 
         public bool HasLogo => !string.IsNullOrEmpty(LogoPath) && File.Exists(LogoPath);
-
-        public bool IsLoading
-        {
-            get => _isLoading;
-            set
-            {
-                _isLoading = value;
-                OnPropertyChanged();
-            }
-        }
 
         public bool HasUnsavedChanges
         {
             get => _hasUnsavedChanges;
             set
             {
-                _hasUnsavedChanges = value;
-                OnPropertyChanged();
-                CommandManager.InvalidateRequerySuggested();
+                if (SetProperty(ref _hasUnsavedChanges, value))
+                    CommandManager.InvalidateRequerySuggested();
             }
         }
 
@@ -138,7 +126,7 @@ namespace InvoicingApp.ViewModels
             get => Settings?.CompanyName;
             set
             {
-                if (Settings != null)
+                if (Settings != null && Settings.CompanyName != value)
                 {
                     Settings.CompanyName = value;
                     OnPropertyChanged();
@@ -152,7 +140,7 @@ namespace InvoicingApp.ViewModels
             get => Settings?.CompanyAddress;
             set
             {
-                if (Settings != null)
+                if (Settings != null && Settings.CompanyAddress != value)
                 {
                     Settings.CompanyAddress = value;
                     OnPropertyChanged();
@@ -166,7 +154,7 @@ namespace InvoicingApp.ViewModels
             get => Settings?.CompanyTaxID;
             set
             {
-                if (Settings != null)
+                if (Settings != null && Settings.CompanyTaxID != value)
                 {
                     Settings.CompanyTaxID = value;
                     OnPropertyChanged();
@@ -180,7 +168,7 @@ namespace InvoicingApp.ViewModels
             get => Settings?.CompanyEmail;
             set
             {
-                if (Settings != null)
+                if (Settings != null && Settings.CompanyEmail != value)
                 {
                     Settings.CompanyEmail = value;
                     OnPropertyChanged();
@@ -194,7 +182,7 @@ namespace InvoicingApp.ViewModels
             get => Settings?.CompanyPhone;
             set
             {
-                if (Settings != null)
+                if (Settings != null && Settings.CompanyPhone != value)
                 {
                     Settings.CompanyPhone = value;
                     OnPropertyChanged();
@@ -208,7 +196,7 @@ namespace InvoicingApp.ViewModels
             get => Settings?.CompanyBankAccount;
             set
             {
-                if (Settings != null)
+                if (Settings != null && Settings.CompanyBankAccount != value)
                 {
                     Settings.CompanyBankAccount = value;
                     OnPropertyChanged();
@@ -222,7 +210,7 @@ namespace InvoicingApp.ViewModels
             get => Settings?.InvoiceRetentionDays ?? 0;
             set
             {
-                if (Settings != null)
+                if (Settings != null && Settings.InvoiceRetentionDays != value)
                 {
                     Settings.InvoiceRetentionDays = value;
                     OnPropertyChanged();
@@ -250,13 +238,15 @@ namespace InvoicingApp.ViewModels
         public ICommand RemoveVatRateCommand { get; }
         public ICommand RemoveCurrencyCommand { get; }
         public ICommand BackCommand { get; }
+        public ICommand BackupDataCommand { get; }
+        public ICommand RestoreDataCommand { get; }
 
         private async void LoadSettingsAsync()
         {
-            IsLoading = true;
-
             try
             {
+                IsLoading = true;
+
                 var settings = await _settingsService.GetSettingsAsync();
                 Settings = settings;
 
@@ -271,8 +261,7 @@ namespace InvoicingApp.ViewModels
             }
             catch (Exception ex)
             {
-                // Handle error
-                System.Windows.MessageBox.Show($"Błąd podczas ładowania ustawień: {ex.Message}", "Błąd", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                DisplayError(ex, "Błąd podczas ładowania ustawień");
             }
             finally
             {
@@ -286,17 +275,21 @@ namespace InvoicingApp.ViewModels
             {
                 try
                 {
+                    IsLoading = true;
                     Settings.CompanyLogoPath = LogoPath;
 
                     await _settingsService.SaveSettingsAsync(Settings);
                     HasUnsavedChanges = false;
 
-                    System.Windows.MessageBox.Show("Dane firmy zostały zapisane.", "Sukces", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                    DisplayInformation("Dane firmy zostały zapisane.", "Zapisano");
                 }
                 catch (Exception ex)
                 {
-                    // Handle error
-                    System.Windows.MessageBox.Show($"Błąd podczas zapisywania danych firmy: {ex.Message}", "Błąd", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    DisplayError(ex, "Błąd podczas zapisywania danych firmy");
+                }
+                finally
+                {
+                    IsLoading = false;
                 }
             }
         }
@@ -307,6 +300,7 @@ namespace InvoicingApp.ViewModels
             {
                 try
                 {
+                    IsLoading = true;
                     // Update settings with current collections
                     Settings.VatRates = new List<string>(VatRates);
                     Settings.Currencies = new List<string>(Currencies);
@@ -314,12 +308,41 @@ namespace InvoicingApp.ViewModels
                     await _settingsService.SaveSettingsAsync(Settings);
                     HasUnsavedChanges = false;
 
-                    System.Windows.MessageBox.Show("Ustawienia zostały zapisane.", "Sukces", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                    DisplayInformation("Ustawienia zostały zapisane.", "Zapisano");
                 }
                 catch (Exception ex)
                 {
-                    // Handle error
-                    System.Windows.MessageBox.Show($"Błąd podczas zapisywania ustawień: {ex.Message}", "Błąd", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    DisplayError(ex, "Błąd podczas zapisywania ustawień");
+                }
+                finally
+                {
+                    IsLoading = false;
+                }
+            }
+        }
+
+        private async Task SaveSettingsAsync()
+        {
+            if (Settings != null)
+            {
+                try
+                {
+                    IsLoading = true;
+                    // Update settings with current collections
+                    Settings.VatRates = new List<string>(VatRates);
+                    Settings.Currencies = new List<string>(Currencies);
+                    Settings.CompanyLogoPath = LogoPath;
+
+                    await _settingsService.SaveSettingsAsync(Settings);
+                    HasUnsavedChanges = false;
+                }
+                catch (Exception ex)
+                {
+                    DisplayError(ex, "Błąd podczas zapisywania ustawień");
+                }
+                finally
+                {
+                    IsLoading = false;
                 }
             }
         }
@@ -341,8 +364,7 @@ namespace InvoicingApp.ViewModels
             }
             catch (Exception ex)
             {
-                // Handle error
-                System.Windows.MessageBox.Show($"Błąd podczas wybierania logo: {ex.Message}", "Błąd", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                DisplayError(ex, "Błąd podczas wybierania logo");
             }
         }
 
@@ -402,6 +424,55 @@ namespace InvoicingApp.ViewModels
             }
         }
 
+        private async Task BackupData()
+        {
+            try
+            {
+                IsLoading = true;
+
+                if (HasUnsavedChanges)
+                {
+                    if (DisplayQuestion("Masz niezapisane zmiany. Czy chcesz je zapisać przed utworzeniem kopii zapasowej?", "Niezapisane zmiany"))
+                    {
+                        await SaveSettingsAsync();
+                    }
+                }
+
+                await _backupService.BackupDataAsync();
+            }
+            catch (Exception ex)
+            {
+                DisplayError(ex, "Błąd podczas tworzenia kopii zapasowej");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+
+        private async Task RestoreData()
+        {
+            try
+            {
+                IsLoading = true;
+
+                bool result = await _backupService.RestoreDataAsync();
+                if (result)
+                {
+                    DisplayInformation("Aby zastosować przywrócone ustawienia, aplikacja zostanie zamknięta.", "Wymagane ponowne uruchomienie");
+                    Application.Current.Shutdown();
+                }
+            }
+            catch (Exception ex)
+            {
+                DisplayError(ex, "Błąd podczas przywracania danych");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+
         private void NavigateBack()
         {
             _navigationService.GoBack();
@@ -411,57 +482,12 @@ namespace InvoicingApp.ViewModels
         {
             if (HasUnsavedChanges)
             {
-                var result = System.Windows.MessageBox.Show(
+                return DisplayQuestion(
                     "Masz niezapisane zmiany. Czy na pewno chcesz wyjść bez zapisywania?",
-                    "Niezapisane zmiany",
-                    System.Windows.MessageBoxButton.YesNo,
-                    System.Windows.MessageBoxImage.Warning);
-
-                return result == System.Windows.MessageBoxResult.Yes;
+                    "Niezapisane zmiany");
             }
 
             return true;
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-    }
-
-    public class RetentionOption
-    {
-        public int Days { get; set; }
-        public string DisplayName { get; set; }
-    }
-
-    public class RelayCommand<T> : ICommand
-    {
-        private readonly Action<T> _execute;
-        private readonly Predicate<T> _canExecute;
-
-        public RelayCommand(Action<T> execute, Predicate<T> canExecute = null)
-        {
-            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-            _canExecute = canExecute;
-        }
-
-        public bool CanExecute(object parameter)
-        {
-            return _canExecute?.Invoke((T)parameter) ?? true;
-        }
-
-        public void Execute(object parameter)
-        {
-            _execute((T)parameter);
-        }
-
-        public event EventHandler CanExecuteChanged
-        {
-            add { CommandManager.RequerySuggested += value; }
-            remove { CommandManager.RequerySuggested -= value; }
         }
     }
 }

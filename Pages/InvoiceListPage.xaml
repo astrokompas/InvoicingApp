@@ -4,8 +4,15 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:InvoicingApp.Pages"
+      xmlns:cmd="clr-namespace:InvoicingApp.Commands"
       mc:Ignorable="d" 
       Title="Faktury" Background="{StaticResource BackgroundBrush}">
+
+    <Page.InputBindings>
+        <KeyBinding Key="N" Modifiers="Control" Command="{Binding NewInvoiceCommand}" />
+        <KeyBinding Key="F5" Command="{Binding RefreshCommand}" />
+        <KeyBinding Key="P" Modifiers="Control" Command="{Binding ExportPdfCommand}" />
+    </Page.InputBindings>
 
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -74,7 +81,8 @@
                         Style="{StaticResource ActionButtonStyle}" 
                         Width="120" 
                         Height="36" 
-                        Command="{Binding NewInvoiceCommand}">
+                        Command="{Binding NewInvoiceCommand}"
+                        ToolTip="Nowa faktura (Ctrl+N)">
                     <Button.ContentTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
@@ -84,12 +92,22 @@
                         </DataTemplate>
                     </Button.ContentTemplate>
                 </Button>
+                <Button ToolTip="Dodaj płatność" 
+                        Style="{StaticResource SecondaryButtonStyle}" 
+                        Width="36" 
+                        Height="28" 
+                        Margin="2" 
+                        Command="{Binding DataContext.AddPaymentCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                        Visibility="{Binding IsPaid, Converter={StaticResource BoolToVisibilityInverseConverter}}">
+                    <TextBlock Text="💲" FontSize="14" Foreground="#4CAF50"/>
+                </Button>
                 <Button Content="Odśwież" 
                         Style="{StaticResource SecondaryButtonStyle}" 
                         Width="100" 
                         Height="36" 
                         Margin="10,0,0,0" 
-                        Command="{Binding RefreshCommand}"/>
+                        Command="{Binding RefreshCommand}"
+                        ToolTip="Odśwież (F5)"/>
             </StackPanel>
         </Grid>
 

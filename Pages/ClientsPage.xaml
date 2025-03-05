@@ -8,6 +8,13 @@
       mc:Ignorable="d" 
       Title="Klienci" Background="{StaticResource BackgroundBrush}">
 
+    <Page.InputBindings>
+        <KeyBinding Key="N" Modifiers="Control" Command="{Binding AddClientCommand}" />
+        <KeyBinding Key="F5" Command="{Binding RefreshCommand}" />
+        <KeyBinding Key="Escape" Command="{Binding CancelEditCommand}" />
+        <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveClientCommand}" />
+    </Page.InputBindings>
+
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -75,6 +82,7 @@
                         Width="120" 
                         Height="36" 
                         Command="{Binding AddClientCommand}"
+                        ToolTip="Dodaj nowego klienta (Ctrl+N)"
                         Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibilityInverseConverter}}">
                     <Button.ContentTemplate>
                         <DataTemplate>
@@ -91,6 +99,7 @@
                         Height="36" 
                         Margin="10,0,0,0" 
                         Command="{Binding RefreshCommand}"
+                        ToolTip="Odśwież listę klientów (F5)"
                         Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibilityInverseConverter}}"/>
             </StackPanel>
         </Grid>
@@ -131,7 +140,7 @@
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <Button ToolTip="Edytuj" 
+                                        <Button ToolTip="Edytuj klienta" 
                                                 Style="{StaticResource SecondaryButtonStyle}" 
                                                 Width="36" 
                                                 Height="28" 
@@ -139,7 +148,7 @@
                                                 Command="{Binding DataContext.EditClientCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}">
                                             <TextBlock Text="✎" FontSize="14"/>
                                         </Button>
-                                        <Button ToolTip="Usuń" 
+                                        <Button ToolTip="Usuń klienta" 
                                                 Style="{StaticResource SecondaryButtonStyle}" 
                                                 Width="36" 
                                                 Height="28" 
@@ -298,12 +307,14 @@
                             Style="{StaticResource SecondaryButtonStyle}" 
                             Width="100" 
                             Height="36" 
-                            Margin="0,0,10,0"/>
+                            Margin="0,0,10,0"
+                            ToolTip="Anuluj edycję (Esc)"/>
                     <Button Content="Zapisz" 
                             Command="{Binding SaveClientCommand}" 
                             Style="{StaticResource ActionButtonStyle}" 
                             Width="100" 
-                            Height="36"/>
+                            Height="36"
+                            ToolTip="Zapisz zmiany (Ctrl+S)"/>
                 </StackPanel>
             </Grid>
         </Border>

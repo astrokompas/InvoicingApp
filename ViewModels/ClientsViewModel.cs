@@ -2,16 +2,16 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Input;
+using InvoicingApp.Commands;
 using InvoicingApp.Models;
 using InvoicingApp.Services;
 
 namespace InvoicingApp.ViewModels
 {
-    public class ClientsViewModel : INotifyPropertyChanged
+    public class ClientsViewModel : BaseViewModel
     {
         private readonly IClientService _clientService;
         private readonly INavigationService _navigationService;
@@ -20,18 +20,21 @@ namespace InvoicingApp.ViewModels
         private string _searchText;
         private ICollectionView _filteredClients;
         private Client _selectedClient;
-        private bool _isLoading;
 
         // For adding/editing clients
         private Client _currentClient = new Client();
         private bool _isEditing;
 
-        public ClientsViewModel(IClientService clientService, INavigationService navigationService)
+        public ClientsViewModel(
+            IClientService clientService,
+            INavigationService navigationService,
+            IDialogService dialogService)
+            : base(dialogService)
         {
             _clientService = clientService;
             _navigationService = navigationService;
 
-            // Initialize commands
+            // Initialize commands with centralized command classes
             AddClientCommand = new RelayCommand(AddClient, CanAddClient);
             EditClientCommand = new RelayCommand(EditClient, CanEditClient);
             DeleteClientCommand = new RelayCommand(DeleteClient, CanDeleteClient);
@@ -49,11 +52,14 @@ namespace InvoicingApp.ViewModels
             get => _clients;
             set
             {
-                _clients = value;
-                _filteredClients = CollectionViewSource.GetDefaultView(_clients);
-                _filteredClients.Filter = FilterClients;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(FilteredClients));
+                if (SetProperty(ref _clients, value))
+                {
+                    _filteredClients = CollectionViewSource.GetDefaultView(_clients);
+                    _filteredClients.Filter = FilterClients;
+                    OnPropertyChanged(nameof(FilteredClients));
+                    OnPropertyChanged(nameof(TotalClientCount));
+                    OnPropertyChanged(nameof(ActiveClientCount));
+                }
             }
         }
 
@@ -64,9 +70,8 @@ namespace InvoicingApp.ViewModels
             get => _searchText;
             set
             {
-                _searchText = value;
-                _filteredClients?.Refresh();
-                OnPropertyChanged();
+                if (SetProperty(ref _searchText, value))
+                    _filteredClients?.Refresh();
             }
         }
 
@@ -75,40 +80,21 @@ namespace InvoicingApp.ViewModels
             get => _selectedClient;
             set
             {
-                _selectedClient = value;
-                OnPropertyChanged();
-                CommandManager.InvalidateRequerySuggested();
+                if (SetProperty(ref _selectedClient, value))
+                    CommandManager.InvalidateRequerySuggested();
             }
         }
 
         public Client CurrentClient
         {
             get => _currentClient;
-            set
-            {
-                _currentClient = value;
-                OnPropertyChanged();
-            }
+            set => SetProperty(ref _currentClient, value);
         }
 
         public bool IsEditing
         {
             get => _isEditing;
-            set
-            {
-                _isEditing = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public bool IsLoading
-        {
-            get => _isLoading;
-            set
-            {
-                _isLoading = value;
-                OnPropertyChanged();
-            }
+            set => SetProperty(ref _isEditing, value);
         }
 
         // Statistics
@@ -126,18 +112,15 @@ namespace InvoicingApp.ViewModels
 
         private async void LoadClientsAsync()
         {
-            IsLoading = true;
-
             try
             {
+                IsLoading = true;
                 var clients = await _clientService.GetAllClientsAsync();
-
                 Clients = new ObservableCollection<Client>(clients);
             }
             catch (Exception ex)
             {
-                // Handle error (log or show message)
-                System.Windows.MessageBox.Show($"Błąd podczas ładowania klientów: {ex.Message}", "Błąd", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                DisplayError(ex, "Błąd podczas ładowania klientów");
             }
             finally
             {
@@ -201,24 +184,24 @@ namespace InvoicingApp.ViewModels
         {
             if (SelectedClient != null)
             {
-                // Confirm deletion
-                var result = System.Windows.MessageBox.Show(
-                    $"Czy na pewno chcesz usunąć klienta {SelectedClient.Name}?",
-                    "Potwierdzenie usunięcia",
-                    System.Windows.MessageBoxButton.YesNo,
-                    System.Windows.MessageBoxImage.Question);
-
-                if (result == System.Windows.MessageBoxResult.Yes)
+                // Use centralized dialog service for consistent UI
+                if (DisplayQuestion($"Czy na pewno chcesz usunąć klienta {SelectedClient.Name}?",
+                    "Potwierdzenie usunięcia"))
                 {
                     try
                     {
+                        IsLoading = true;
                         await _clientService.DeleteClientAsync(SelectedClient.Id);
                         Clients.Remove(SelectedClient);
+                        DisplayInformation("Klient został usunięty pomyślnie.", "Usunięto");
                     }
                     catch (Exception ex)
                     {
-                        // Handle error
-                        System.Windows.MessageBox.Show($"Błąd podczas usuwania klienta: {ex.Message}", "Błąd", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                        DisplayError(ex, "Błąd podczas usuwania klienta");
+                    }
+                    finally
+                    {
+                        IsLoading = false;
                     }
                 }
             }
@@ -235,16 +218,18 @@ namespace InvoicingApp.ViewModels
             {
                 try
                 {
+                    IsLoading = true;
+
                     // Validate client data
                     if (string.IsNullOrWhiteSpace(CurrentClient.Name))
                     {
-                        System.Windows.MessageBox.Show("Nazwa klienta jest wymagana.", "Błąd walidacji", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                        DisplayWarning("Nazwa klienta jest wymagana.", "Błąd walidacji");
                         return;
                     }
 
                     if (string.IsNullOrWhiteSpace(CurrentClient.TaxID))
                     {
-                        System.Windows.MessageBox.Show("NIP klienta jest wymagany.", "Błąd walidacji", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                        DisplayWarning("NIP klienta jest wymagany.", "Błąd walidacji");
                         return;
                     }
 
@@ -268,11 +253,16 @@ namespace InvoicingApp.ViewModels
 
                     IsEditing = false;
                     CurrentClient = new Client();
+
+                    DisplayInformation("Klient został zapisany pomyślnie.", "Zapisano");
                 }
                 catch (Exception ex)
                 {
-                    // Handle error
-                    System.Windows.MessageBox.Show($"Błąd podczas zapisywania klienta: {ex.Message}", "Błąd", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    DisplayError(ex, "Błąd podczas zapisywania klienta");
+                }
+                finally
+                {
+                    IsLoading = false;
                 }
             }
         }
@@ -296,41 +286,6 @@ namespace InvoicingApp.ViewModels
         private void Refresh()
         {
             LoadClientsAsync();
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-    }
-
-    public class RelayCommand : ICommand
-    {
-        private readonly Action _execute;
-        private readonly Func<bool> _canExecute;
-
-        public RelayCommand(Action execute, Func<bool> canExecute = null)
-        {
-            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-            _canExecute = canExecute;
-        }
-
-        public bool CanExecute(object parameter)
-        {
-            return _canExecute?.Invoke() ?? true;
-        }
-
-        public void Execute(object parameter)
-        {
-            _execute();
-        }
-
-        public event EventHandler CanExecuteChanged
-        {
-            add { CommandManager.RequerySuggested += value; }
-            remove { CommandManager.RequerySuggested -= value; }
         }
     }
 }

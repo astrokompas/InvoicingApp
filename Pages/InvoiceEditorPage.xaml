@@ -7,6 +7,16 @@
       mc:Ignorable="d"
       Title="Edycja faktury" Background="{StaticResource BackgroundBrush}">
 
+    <Page.InputBindings>
+        <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveInvoiceCommand}" />
+        <KeyBinding Key="P" Modifiers="Control" Command="{Binding ExportPdfCommand}" />
+        <KeyBinding Key="D1" Modifiers="Control" Command="{Binding SwitchModeCommand}" CommandParameter="InvoiceDetails" />
+        <KeyBinding Key="D2" Modifiers="Control" Command="{Binding SwitchModeCommand}" CommandParameter="Items" />
+        <KeyBinding Key="D3" Modifiers="Control" Command="{Binding SwitchModeCommand}" CommandParameter="Payment" />
+        <KeyBinding Key="N" Modifiers="Control" Command="{Binding AddItemCommand}" />
+        <KeyBinding Key="Escape" Command="{Binding CancelCommand}" />
+    </Page.InputBindings>
+
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -20,37 +30,42 @@
             <StackPanel Orientation="Horizontal" Margin="10">
                 <!-- Mode Selection Buttons -->
                 <ToggleButton Content="Dane faktury" 
-                              Width="110" Height="30" Margin="5" 
-                              IsChecked="{Binding EditMode, ConverterParameter=InvoiceDetails, Converter={StaticResource StringEqualsConverter}}"
-                              Command="{Binding SwitchModeCommand}" 
-                              CommandParameter="InvoiceDetails"
-                              Style="{StaticResource ModeToggleButtonStyle}"/>
+              Width="110" Height="30" Margin="5" 
+              IsChecked="{Binding EditMode, ConverterParameter=InvoiceDetails, Converter={StaticResource StringEqualsConverter}}"
+              Command="{Binding SwitchModeCommand}" 
+              CommandParameter="InvoiceDetails"
+              Style="{StaticResource ModeToggleButtonStyle}"
+              ToolTip="Przejdź do edycji danych faktury (Ctrl+1)"/>
 
                 <ToggleButton Content="Pozycje" 
-                              Width="110" Height="30" Margin="5" 
-                              IsChecked="{Binding EditMode, ConverterParameter=Items, Converter={StaticResource StringEqualsConverter}}"
-                              Command="{Binding SwitchModeCommand}" 
-                              CommandParameter="Items"
-                              Style="{StaticResource ModeToggleButtonStyle}"/>
+              Width="110" Height="30" Margin="5" 
+              IsChecked="{Binding EditMode, ConverterParameter=Items, Converter={StaticResource StringEqualsConverter}}"
+              Command="{Binding SwitchModeCommand}" 
+              CommandParameter="Items"
+              Style="{StaticResource ModeToggleButtonStyle}"
+              ToolTip="Przejdź do edycji pozycji faktury (Ctrl+2)"/>
 
                 <ToggleButton Content="Płatność" 
-                              Width="110" Height="30" Margin="5" 
-                              IsChecked="{Binding EditMode, ConverterParameter=Payment, Converter={StaticResource StringEqualsConverter}}"
-                              Command="{Binding SwitchModeCommand}" 
-                              CommandParameter="Payment"
-                              Style="{StaticResource ModeToggleButtonStyle}"/>
+              Width="110" Height="30" Margin="5" 
+              IsChecked="{Binding EditMode, ConverterParameter=Payment, Converter={StaticResource StringEqualsConverter}}"
+              Command="{Binding SwitchModeCommand}" 
+              CommandParameter="Payment"
+              Style="{StaticResource ModeToggleButtonStyle}"
+              ToolTip="Przejdź do edycji płatności (Ctrl+3)"/>
 
                 <Button Content="Zapisz fakturę" 
-                        Width="120" Height="30" Margin="5,5,5,5" 
-                        HorizontalAlignment="Right"
-                        Command="{Binding SaveInvoiceCommand}"
-                        Style="{StaticResource ActionButtonStyle}"/>
+        Width="120" Height="30" Margin="5,5,5,5" 
+        HorizontalAlignment="Right"
+        Command="{Binding SaveInvoiceCommand}"
+        Style="{StaticResource ActionButtonStyle}"
+        ToolTip="Zapisz fakturę (Ctrl+S)"/>
 
                 <Button Content="Eksportuj PDF" 
-                        Width="120" Height="30" Margin="5,5,5,5" 
-                        HorizontalAlignment="Right"
-                        Command="{Binding ExportPdfCommand}"
-                        Style="{StaticResource ActionButtonStyle}"/>
+        Width="120" Height="30" Margin="5,5,5,5" 
+        HorizontalAlignment="Right"
+        Command="{Binding ExportPdfCommand}"
+        Style="{StaticResource ActionButtonStyle}"
+        ToolTip="Eksportuj fakturę do pliku PDF (Ctrl+P)"/>
             </StackPanel>
         </Border>
 
@@ -254,6 +269,7 @@
                             <Button Content="+ Dodaj pozycję" 
                                     Command="{Binding AddItemCommand}"
                                     Style="{StaticResource AddItemButtonStyle}"
+                                    ToolTip="Dodaj nową pozycję (Ctrl+N)"
                                     Visibility="{Binding EditMode, ConverterParameter=Items, Converter={StaticResource StringEqualsToVisibilityConverter}}"/>
                         </StackPanel>
                     </Border>

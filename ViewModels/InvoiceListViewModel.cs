@@ -2,17 +2,16 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Input;
-using System.Windows.Navigation;
+using InvoicingApp.Commands;
 using InvoicingApp.Models;
 using InvoicingApp.Services;
 
 namespace InvoicingApp.ViewModels
 {
-    public class InvoiceListViewModel : INotifyPropertyChanged
+    public class InvoiceListViewModel : BaseViewModel, IAsyncInitializable
     {
         private readonly IInvoiceService _invoiceService;
         private readonly INavigationService _navigationService;
@@ -22,27 +21,31 @@ namespace InvoicingApp.ViewModels
         private string _searchText;
         private ICollectionView _filteredInvoices;
         private InvoiceListItem _selectedInvoice;
-        private bool _isLoading;
 
         public InvoiceListViewModel(
-        IInvoiceService invoiceService,
+            IInvoiceService invoiceService,
             INavigationService navigationService,
-            IPDFService pdfService)
+            IPDFService pdfService,
+            IDialogService dialogService)
+            : base(dialogService)
         {
             _invoiceService = invoiceService;
             _navigationService = navigationService;
             _pdfService = pdfService;
 
-            // Initialize commands
+            // Initialize commands using centralized command classes
             NewInvoiceCommand = new RelayCommand(CreateNewInvoice);
             EditInvoiceCommand = new RelayCommand(EditInvoice, CanEditInvoice);
             DeleteInvoiceCommand = new RelayCommand(DeleteInvoice, CanDeleteInvoice);
             MarkAsPaidCommand = new RelayCommand(MarkAsPaid, CanMarkAsPaid);
             ExportPdfCommand = new RelayCommand(ExportPdf, CanExportPdf);
             RefreshCommand = new RelayCommand(Refresh);
+            AddPaymentCommand = new RelayCommand(AddPayment, CanAddPayment);
+        }
 
-            // Load invoices
-            LoadInvoicesAsync();
+        public async Task InitializeAsync()
+        {
+            await LoadInvoicesAsync();
         }
 
         public ObservableCollection<InvoiceListItem> Invoices
@@ -50,11 +53,13 @@ namespace InvoicingApp.ViewModels
             get => _invoices;
             set
             {
-                _invoices = value;
-                _filteredInvoices = CollectionViewSource.GetDefaultView(_invoices);
-                _filteredInvoices.Filter = FilterInvoices;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(FilteredInvoices));
+                if (SetProperty(ref _invoices, value))
+                {
+                    _filteredInvoices = CollectionViewSource.GetDefaultView(_invoices);
+                    _filteredInvoices.Filter = FilterInvoices;
+                    OnPropertyChanged(nameof(FilteredInvoices));
+                    UpdateStatistics();
+                }
             }
         }
 
@@ -65,9 +70,8 @@ namespace InvoicingApp.ViewModels
             get => _searchText;
             set
             {
-                _searchText = value;
-                _filteredInvoices?.Refresh();
-                OnPropertyChanged();
+                if (SetProperty(ref _searchText, value))
+                    _filteredInvoices?.Refresh();
             }
         }
 
@@ -76,19 +80,8 @@ namespace InvoicingApp.ViewModels
             get => _selectedInvoice;
             set
             {
-                _selectedInvoice = value;
-                OnPropertyChanged();
-                CommandManager.InvalidateRequerySuggested();
-            }
-        }
-
-        public bool IsLoading
-        {
-            get => _isLoading;
-            set
-            {
-                _isLoading = value;
-                OnPropertyChanged();
+                if (SetProperty(ref _selectedInvoice, value))
+                    CommandManager.InvalidateRequerySuggested();
             }
         }
 
@@ -107,13 +100,13 @@ namespace InvoicingApp.ViewModels
         public ICommand MarkAsPaidCommand { get; }
         public ICommand ExportPdfCommand { get; }
         public ICommand RefreshCommand { get; }
+        public ICommand AddPaymentCommand { get; }
 
-        private async void LoadInvoicesAsync()
+        private async Task LoadInvoicesAsync()
         {
-            IsLoading = true;
-
             try
             {
+                IsLoading = true;
                 var invoices = await _invoiceService.GetAllInvoicesAsync();
 
                 Invoices = new ObservableCollection<InvoiceListItem>(
@@ -125,16 +118,17 @@ namespace InvoicingApp.ViewModels
                         InvoiceDate = i.InvoiceDate,
                         DueDate = i.DueDate,
                         TotalGross = i.TotalGross,
-                        IsPaid = i.IsPaid,
-                        PaymentDate = i.PaymentDate
+                        PaymentStatus = i.PaymentStatus,
+                        PaymentDate = i.PaymentDate,
+                        // Support for payment system
+                        PaidAmount = i.PaidAmount,
+                        // RemainingAmount is calculated in the model
                     }).OrderByDescending(i => i.InvoiceDate)
                 );
-
-                UpdateStatistics();
             }
             catch (Exception ex)
             {
-                // Handle error (log or show message)
+                DisplayError(ex, "Błąd podczas ładowania faktur");
             }
             finally
             {
@@ -175,7 +169,8 @@ namespace InvoicingApp.ViewModels
         {
             if (SelectedInvoice != null)
             {
-                _navigationService.NavigateTo<InvoiceEditorViewModel>(new NavigationParameter("InvoiceId", SelectedInvoice.Id));
+                _navigationService.NavigateTo<InvoiceEditorViewModel>(
+                    new NavigationParameter("InvoiceId", SelectedInvoice.Id));
             }
         }
 
@@ -188,24 +183,26 @@ namespace InvoicingApp.ViewModels
         {
             if (SelectedInvoice != null)
             {
-                // Confirm deletion
-                var result = System.Windows.MessageBox.Show(
+                // Use dialog service for consistent UI
+                if (DisplayQuestion(
                     $"Czy na pewno chcesz usunąć fakturę {SelectedInvoice.InvoiceNumber}?",
-                    "Potwierdzenie usunięcia",
-                    System.Windows.MessageBoxButton.YesNo,
-                    System.Windows.MessageBoxImage.Question);
-
-                if (result == System.Windows.MessageBoxResult.Yes)
+                    "Potwierdzenie usunięcia"))
                 {
                     try
                     {
+                        IsLoading = true;
                         await _invoiceService.DeleteInvoiceAsync(SelectedInvoice.Id);
                         Invoices.Remove(SelectedInvoice);
                         UpdateStatistics();
+                        DisplayInformation("Faktura została usunięta pomyślnie.", "Usunięto");
                     }
                     catch (Exception ex)
                     {
-                        // Handle error
+                        DisplayError(ex, "Błąd podczas usuwania faktury");
+                    }
+                    finally
+                    {
+                        IsLoading = false;
                     }
                 }
             }
@@ -216,34 +213,68 @@ namespace InvoicingApp.ViewModels
             return SelectedInvoice != null;
         }
 
+        // Updated to use the new payment system
         private async void MarkAsPaid()
         {
             if (SelectedInvoice != null)
             {
                 try
                 {
+                    IsLoading = true;
                     var invoice = await _invoiceService.GetInvoiceByIdAsync(SelectedInvoice.Id);
                     if (invoice != null)
                     {
-                        invoice.IsPaid = true;
-                        invoice.PaymentDate = DateTime.Now;
+                        // Create full payment
+                        var payment = new Payment
+                        {
+                            Date = DateTime.Now,
+                            Amount = invoice.TotalGross,
+                            Method = invoice.PaymentMethod,
+                            Notes = "Płatność całkowita"
+                        };
+
+                        // Use new payment system
+                        invoice.Payments.Add(payment);
+                        invoice.PaymentStatus = PaymentStatus.Paid;
 
                         await _invoiceService.SaveInvoiceAsync(invoice);
 
                         // Update the list item
-                        SelectedInvoice.IsPaid = true;
-                        SelectedInvoice.PaymentDate = invoice.PaymentDate;
+                        SelectedInvoice.PaymentStatus = PaymentStatus.Paid;
+                        SelectedInvoice.PaymentDate = DateTime.Now;
+                        SelectedInvoice.PaidAmount = invoice.TotalGross;
 
                         // Refresh the view
                         _filteredInvoices.Refresh();
                         UpdateStatistics();
+
+                        DisplayInformation("Faktura została oznaczona jako zapłacona.", "Zapłacono");
                     }
                 }
                 catch (Exception ex)
                 {
-                    // Handle error
+                    DisplayError(ex, "Błąd podczas oznaczania faktury jako zapłaconej");
+                }
+                finally
+                {
+                    IsLoading = false;
                 }
             }
+        }
+
+        // New method for partial payments
+        private void AddPayment()
+        {
+            if (SelectedInvoice != null)
+            {
+                _navigationService.NavigateTo<AddPaymentViewModel>(
+                    new NavigationParameter("InvoiceId", SelectedInvoice.Id));
+            }
+        }
+
+        private bool CanAddPayment()
+        {
+            return SelectedInvoice != null && !SelectedInvoice.IsPaid;
         }
 
         private bool CanMarkAsPaid()
@@ -257,6 +288,7 @@ namespace InvoicingApp.ViewModels
             {
                 try
                 {
+                    IsLoading = true;
                     var invoice = await _invoiceService.GetInvoiceByIdAsync(SelectedInvoice.Id);
                     if (invoice != null)
                     {
@@ -268,11 +300,17 @@ namespace InvoicingApp.ViewModels
                             FileName = pdfPath,
                             UseShellExecute = true
                         });
+
+                        DisplayInformation("Faktura została wyeksportowana do PDF.", "Eksport PDF");
                     }
                 }
                 catch (Exception ex)
                 {
-                    // Handle error
+                    DisplayError(ex, "Błąd podczas eksportowania faktury do PDF");
+                }
+                finally
+                {
+                    IsLoading = false;
                 }
             }
         }
@@ -286,29 +324,5 @@ namespace InvoicingApp.ViewModels
         {
             LoadInvoicesAsync();
         }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-    }
-
-    public class InvoiceListItem
-    {
-        public string Id { get; set; }
-        public string InvoiceNumber { get; set; }
-        public string ClientName { get; set; }
-        public DateTime InvoiceDate { get; set; }
-        public DateTime DueDate { get; set; }
-        public decimal TotalGross { get; set; }
-        public bool IsPaid { get; set; }
-        public DateTime? PaymentDate { get; set; }
-
-        public string Status => IsPaid ? "Zapłacona" : (DateTime.Now > DueDate ? "Zaległa" : "Oczekująca");
-        public string FormattedDate => InvoiceDate.ToString("dd.MM.yyyy");
-        public string FormattedDueDate => DueDate.ToString("dd.MM.yyyy");
-        public string FormattedAmount => $"{TotalGross:N2} PLN";
     }
 }

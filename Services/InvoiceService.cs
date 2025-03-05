@@ -19,6 +19,36 @@ namespace InvoicingApp.Services
             _settingsService = settingsService;
         }
 
+        public async Task<Invoice> GetInvoiceWithClientAsync(string id)
+        {
+            var invoice = await GetInvoiceByIdAsync(id);
+            if (invoice != null && !string.IsNullOrEmpty(invoice.ClientId))
+            {
+                // Load the client data - but avoid circular references
+                invoice.Client = await _clientStorage.GetByIdAsync(invoice.ClientId);
+            }
+            return invoice;
+        }
+
+        public async Task<IEnumerable<Invoice>> GetAllInvoicesWithClientsAsync()
+        {
+            var invoices = await GetAllInvoicesAsync();
+            var clients = await _clientStorage.GetAllAsync();
+
+            // Create a dictionary for faster lookups
+            var clientDict = clients.ToDictionary(c => c.Id);
+
+            foreach (var invoice in invoices)
+            {
+                if (!string.IsNullOrEmpty(invoice.ClientId) && clientDict.TryGetValue(invoice.ClientId, out var client))
+                {
+                    invoice.Client = client;
+                }
+            }
+
+            return invoices;
+        }
+
         public async Task<IEnumerable<Invoice>> GetAllInvoicesAsync()
         {
             return await _invoiceStorage.GetAllAsync();

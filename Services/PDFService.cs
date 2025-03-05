@@ -18,7 +18,6 @@ namespace InvoicingApp.Services
         public PDFService(ISettingsService settingsService)
         {
             _settingsService = settingsService;
-            // Required for PdfSharp to work with non-Latin characters (like Polish)
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
         }
 

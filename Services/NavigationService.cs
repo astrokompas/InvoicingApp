@@ -28,7 +28,8 @@ namespace InvoicingApp.Services
                 { typeof(InvoiceEditorViewModel), typeof(InvoiceEditorPage) },
                 { typeof(ClientsViewModel), typeof(ClientsPage) },
                 { typeof(ReportsViewModel), typeof(ReportsPage) },
-                { typeof(SettingsViewModel), typeof(SettingsPage) }
+                { typeof(SettingsViewModel), typeof(SettingsPage) },
+                { typeof(AddPaymentViewModel), typeof(AddPaymentPage) }
             };
         }
 
@@ -62,6 +63,14 @@ namespace InvoicingApp.Services
             if (parameter != null && viewModel is IParameterizedViewModel paramViewModel)
             {
                 paramViewModel.ApplyParameter(parameter);
+            }
+
+            // Initialize async ViewModel if it implements IAsyncInitializable
+            if (viewModel is IAsyncInitializable asyncViewModel)
+            {
+                // Note: We don't await this as we want to show the page immediately
+                // The page should handle its own loading state
+                _ = asyncViewModel.InitializeAsync();
             }
 
             view.DataContext = viewModel;

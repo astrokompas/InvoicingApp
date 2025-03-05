@@ -1,18 +1,20 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using System.Windows.Input;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Linq;
+using InvoicingApp.Commands;
+using InvoicingApp.Converters;
 using InvoicingApp.Models;
+using InvoicingApp.Services;
 
 namespace InvoicingApp.ViewModels
 {
-    public class InvoiceEditorViewModel : INotifyPropertyChanged
+    public class InvoiceEditorViewModel : BaseViewModel, IAsyncInitializable, IParameterizedViewModel
     {
         private readonly IInvoiceService _invoiceService;
         private readonly IClientService _clientService;
         private readonly ISettingsService _settingsService;
+        private readonly INavigationService _navigationService;
 
         private Invoice _currentInvoice;
         private ObservableCollection<Client> _availableClients;
@@ -22,11 +24,15 @@ namespace InvoicingApp.ViewModels
         public InvoiceEditorViewModel(
             IInvoiceService invoiceService,
             IClientService clientService,
-            ISettingsService settingsService)
+            ISettingsService settingsService,
+            INavigationService navigationService,
+            IDialogService dialogService)
+            : base(dialogService)
         {
             _invoiceService = invoiceService;
             _clientService = clientService;
             _settingsService = settingsService;
+            _navigationService = navigationService;
 
             // Initialize with a new invoice or load existing
             _currentInvoice = new Invoice
@@ -35,68 +41,106 @@ namespace InvoicingApp.ViewModels
                 InvoiceDate = DateTime.Now,
                 SellingDate = DateTime.Now,
                 DueDate = DateTime.Now.AddDays(14),
-                Items = new ObservableCollection<InvoiceItem>()
+                Items = new ObservableCollection<InvoiceItem>(),
+                Payments = new List<Payment>(),
+                PaymentStatus = PaymentStatus.Unpaid
             };
 
-            // Load clients and settings
-            _availableClients = new ObservableCollection<Client>(_clientService.GetAllClients());
-            _vatRates = new ObservableCollection<string>(_settingsService.GetVatRates());
+            // Initialize empty collections
+            _availableClients = new ObservableCollection<Client>();
+            _vatRates = new ObservableCollection<string>();
 
             // Initialize commands
             AddItemCommand = new RelayCommand(AddItem);
             RemoveItemCommand = new RelayCommand<InvoiceItem>(RemoveItem);
             SaveInvoiceCommand = new RelayCommand(SaveInvoice);
             SwitchModeCommand = new RelayCommand<string>(SwitchMode);
+            CancelCommand = new RelayCommand(Cancel);
+        }
 
-            // Add initial item if needed
-            if (_currentInvoice.Items.Count == 0)
+        public void ApplyParameter(NavigationParameter parameter)
+        {
+            if (parameter != null && parameter.Contains("InvoiceId"))
             {
-                AddItem();
+                string invoiceId = parameter.Get<string>("InvoiceId");
+                LoadInvoiceAsync(invoiceId);
             }
+        }
 
-            // Update totals
-            CalculateTotals();
+        public async Task InitializeAsync()
+        {
+            await RunCommandAsync(async () =>
+            {
+                // Load VAT rates from settings
+                var settings = await _settingsService.GetSettingsAsync();
+                VatRates = new ObservableCollection<string>(settings.VatRates);
+
+                // Get clients asynchronously
+                var clients = await _clientService.GetAllClientsAsync();
+                AvailableClients = new ObservableCollection<Client>(clients);
+
+                // Add initial item if needed
+                if (CurrentInvoice.Items.Count == 0)
+                {
+                    AddItem();
+                }
+
+                // Update totals
+                CalculateTotals();
+            });
+        }
+
+        private async void LoadInvoiceAsync(string invoiceId)
+        {
+            await RunCommandAsync(async () =>
+            {
+                var invoice = await _invoiceService.GetInvoiceByIdAsync(invoiceId);
+                if (invoice != null)
+                {
+                    CurrentInvoice = invoice;
+                    CalculateTotals();
+                }
+                else
+                {
+                    DisplayError("Nie znaleziono faktury o podanym identyfikatorze", "Błąd ładowania");
+                }
+            });
         }
 
         // Properties for binding
+        public string AmountInWords
+        {
+            get
+            {
+                if (CurrentInvoice == null)
+                    return string.Empty;
+
+                return NumberToWordsConverter.ConvertToWords(CurrentInvoice.TotalGross);
+            }
+        }
+
         public Invoice CurrentInvoice
         {
             get => _currentInvoice;
-            set
-            {
-                _currentInvoice = value;
-                OnPropertyChanged();
-            }
+            set => SetProperty(ref _currentInvoice, value);
         }
 
         public ObservableCollection<Client> AvailableClients
         {
             get => _availableClients;
-            set
-            {
-                _availableClients = value;
-                OnPropertyChanged();
-            }
+            set => SetProperty(ref _availableClients, value);
         }
 
         public ObservableCollection<string> VatRates
         {
             get => _vatRates;
-            set
-            {
-                _vatRates = value;
-                OnPropertyChanged();
-            }
+            set => SetProperty(ref _vatRates, value);
         }
 
         public string EditMode
         {
             get => _editMode;
-            set
-            {
-                _editMode = value;
-                OnPropertyChanged();
-            }
+            set => SetProperty(ref _editMode, value);
         }
 
         // Commands
@@ -104,6 +148,7 @@ namespace InvoicingApp.ViewModels
         public ICommand RemoveItemCommand { get; }
         public ICommand SaveInvoiceCommand { get; }
         public ICommand SwitchModeCommand { get; }
+        public ICommand CancelCommand { get; }
 
         // Methods
         private void AddItem()
@@ -129,31 +174,51 @@ namespace InvoicingApp.ViewModels
             }
         }
 
-        private void SaveInvoice()
+        private async void SaveInvoice()
         {
             // Validate invoice
             if (string.IsNullOrWhiteSpace(_currentInvoice.InvoiceNumber))
             {
-                // Show error
+                DisplayWarning("Numer faktury jest wymagany", "Błąd walidacji");
                 return;
             }
 
             if (_currentInvoice.Client == null)
             {
-                // Show error
+                DisplayWarning("Klient jest wymagany", "Błąd walidacji");
                 return;
             }
 
             if (_currentInvoice.Items.Count == 0)
             {
-                // Show error
+                DisplayWarning("Faktura musi zawierać przynajmniej jedną pozycję", "Błąd walidacji");
                 return;
             }
 
-            // Save invoice
-            _invoiceService.SaveInvoice(_currentInvoice);
+            try
+            {
+                IsLoading = true;
 
-            // Navigate back or show success
+                // Make sure the client ID is set
+                _currentInvoice.ClientId = _currentInvoice.Client.Id;
+
+                // Save invoice
+                await _invoiceService.SaveInvoiceAsync(_currentInvoice);
+
+                // Show success notification
+                DisplayInformation("Faktura została zapisana pomyślnie", "Zapisano");
+
+                // Navigate back
+                _navigationService.GoBack();
+            }
+            catch (Exception ex)
+            {
+                DisplayError(ex, "Błąd podczas zapisywania faktury");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         private void SwitchMode(string mode)
@@ -162,6 +227,11 @@ namespace InvoicingApp.ViewModels
             {
                 EditMode = mode;
             }
+        }
+
+        private void Cancel()
+        {
+            _navigationService.GoBack();
         }
 
         public void CalculateTotals()
@@ -193,16 +263,44 @@ namespace InvoicingApp.ViewModels
             _currentInvoice.TotalVat = totalVat;
             _currentInvoice.TotalGross = totalNet + totalVat;
 
+            // Update the payment status based on payments
+            UpdatePaymentStatus();
+
             // Notify about changes
             OnPropertyChanged(nameof(CurrentInvoice));
+            OnPropertyChanged(nameof(AmountInWords));
         }
 
-        // INotifyPropertyChanged implementation
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        private void UpdatePaymentStatus()
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            // Only update if we have a non-null invoice
+            if (_currentInvoice == null)
+                return;
+
+            // Calculate total paid amount
+            decimal paidAmount = 0;
+            foreach (var payment in _currentInvoice.Payments)
+            {
+                paidAmount += payment.Amount;
+            }
+
+            // Determine the payment status
+            if (paidAmount >= _currentInvoice.TotalGross)
+            {
+                _currentInvoice.PaymentStatus = PaymentStatus.Paid;
+            }
+            else if (paidAmount > 0)
+            {
+                _currentInvoice.PaymentStatus = PaymentStatus.PartiallyPaid;
+            }
+            else if (DateTime.Now > _currentInvoice.DueDate)
+            {
+                _currentInvoice.PaymentStatus = PaymentStatus.Overdue;
+            }
+            else
+            {
+                _currentInvoice.PaymentStatus = PaymentStatus.Unpaid;
+            }
         }
     }
 }
