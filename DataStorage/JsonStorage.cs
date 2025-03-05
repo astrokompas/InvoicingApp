@@ -78,7 +78,7 @@ namespace InvoicingApp.DataStorage
         public async Task<IEnumerable<T>> QueryAsync(Func<T, bool> predicate)
         {
             var allItems = await GetAllAsync();
-            return new List<T>(allItems).FindAll(predicate);
+            return new List<T>(allItems).Where(predicate).ToList();
         }
 
         private string GetFilePath(string id)

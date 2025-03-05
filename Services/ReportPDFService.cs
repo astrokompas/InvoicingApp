@@ -39,11 +39,11 @@ namespace InvoicingApp.Services
             XGraphics gfx = XGraphics.FromPdfPage(page);
 
             // Define fonts
-            XFont titleFont = new XFont("Arial", 18, XFontStyle.Bold);
-            XFont headerFont = new XFont("Arial", 14, XFontStyle.Bold);
-            XFont normalFont = new XFont("Arial", 10, XFontStyle.Regular);
-            XFont boldFont = new XFont("Arial", 10, XFontStyle.Bold);
-            XFont smallFont = new XFont("Arial", 8, XFontStyle.Regular);
+            XFont titleFont = new XFont("Arial Bold", 18);
+            XFont headerFont = new XFont("Arial Bold", 14);
+            XFont normalFont = new XFont("Arial", 10);
+            XFont boldFont = new XFont("Arial Bold", 10);
+            XFont smallFont = new XFont("Arial", 8);
 
             // Define colors
             XColor mainColor = XColor.FromArgb(62, 108, 178); // #3E6CB2

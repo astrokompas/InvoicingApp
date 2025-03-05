@@ -29,11 +29,6 @@ namespace InvoicingApp.Services
             return client;
         }
 
-        public ClientService(IDataStorage<Client> clientStorage)
-        {
-            _clientStorage = clientStorage;
-        }
-
         public async Task<IEnumerable<Client>> GetAllClientsAsync()
         {
             return await _clientStorage.GetAllAsync();

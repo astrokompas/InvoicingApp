@@ -41,7 +41,7 @@ namespace InvoicingApp.ViewModels
                 InvoiceDate = DateTime.Now,
                 SellingDate = DateTime.Now,
                 DueDate = DateTime.Now.AddDays(14),
-                Items = new ObservableCollection<InvoiceItem>(),
+                Items = new List<InvoiceItem>(),
                 Payments = new List<Payment>(),
                 PaymentStatus = PaymentStatus.Unpaid
             };

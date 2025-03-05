@@ -9,10 +9,11 @@ using InvoicingApp.Commands;
 using InvoicingApp.Models;
 using InvoicingApp.Services;
 using Microsoft.Win32;
+using static InvoicingApp.Models.AppSettings;
 
 namespace InvoicingApp.ViewModels
 {
-    public class SettingsViewModel : BaseViewModel
+    public class SettingsViewModel : BaseViewModel, IAsyncInitializable
     {
         private readonly ISettingsService _settingsService;
         private readonly INavigationService _navigationService;
@@ -49,8 +50,27 @@ namespace InvoicingApp.ViewModels
             BackupDataCommand = new AsyncRelayCommand(BackupData);
             RestoreDataCommand = new AsyncRelayCommand(RestoreData);
 
-            // Load settings
-            LoadSettingsAsync();
+            // Initialize empty collections
+            _vatRates = new ObservableCollection<string>();
+            _currencies = new ObservableCollection<string>();
+        }
+
+        // IAsyncInitializable implementation
+        public async Task InitializeAsync()
+        {
+            try
+            {
+                IsLoading = true;
+                await LoadSettingsAsync();
+            }
+            catch (Exception ex)
+            {
+                DisplayError(ex, "Failed to initialize settings");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         public AppSettings Settings
@@ -241,32 +261,19 @@ namespace InvoicingApp.ViewModels
         public ICommand BackupDataCommand { get; }
         public ICommand RestoreDataCommand { get; }
 
-        private async void LoadSettingsAsync()
+        private async Task LoadSettingsAsync()
         {
-            try
-            {
-                IsLoading = true;
+            var settings = await _settingsService.GetSettingsAsync();
+            Settings = settings;
 
-                var settings = await _settingsService.GetSettingsAsync();
-                Settings = settings;
+            LogoPath = Settings.CompanyLogoPath;
 
-                LogoPath = Settings.CompanyLogoPath;
+            // Initialize collections
+            VatRates = new ObservableCollection<string>(settings.VatRates);
+            Currencies = new ObservableCollection<string>(settings.Currencies);
 
-                // Initialize collections
-                VatRates = new ObservableCollection<string>(settings.VatRates);
-                Currencies = new ObservableCollection<string>(settings.Currencies);
-
-                // Reset unsaved changes flag
-                HasUnsavedChanges = false;
-            }
-            catch (Exception ex)
-            {
-                DisplayError(ex, "Błąd podczas ładowania ustawień");
-            }
-            finally
-            {
-                IsLoading = false;
-            }
+            // Reset unsaved changes flag
+            HasUnsavedChanges = false;
         }
 
         private async void SaveCompanyData()

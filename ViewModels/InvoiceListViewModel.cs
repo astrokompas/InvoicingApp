@@ -160,17 +160,33 @@ namespace InvoicingApp.ViewModels
             return false;
         }
 
-        private void CreateNewInvoice()
+        private async void CreateNewInvoice()
         {
-            _navigationService.NavigateTo<InvoiceEditorViewModel>();
+            try
+            {
+                IsLoading = true;
+                await _navigationService.NavigateToAsync<InvoiceEditorViewModel>();
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
-        private void EditInvoice()
+        private async void EditInvoice()
         {
             if (SelectedInvoice != null)
             {
-                _navigationService.NavigateTo<InvoiceEditorViewModel>(
-                    new NavigationParameter("InvoiceId", SelectedInvoice.Id));
+                try
+                {
+                    IsLoading = true;
+                    await _navigationService.NavigateToAsync<InvoiceEditorViewModel>(
+                        new NavigationParameter("InvoiceId", SelectedInvoice.Id));
+                }
+                finally
+                {
+                    IsLoading = false;
+                }
             }
         }
 
@@ -262,13 +278,20 @@ namespace InvoicingApp.ViewModels
             }
         }
 
-        // New method for partial payments
-        private void AddPayment()
+        private async void AddPayment()
         {
             if (SelectedInvoice != null)
             {
-                _navigationService.NavigateTo<AddPaymentViewModel>(
-                    new NavigationParameter("InvoiceId", SelectedInvoice.Id));
+                try
+                {
+                    IsLoading = true;
+                    await _navigationService.NavigateToAsync<AddPaymentViewModel>(
+                        new NavigationParameter("InvoiceId", SelectedInvoice.Id));
+                }
+                finally
+                {
+                    IsLoading = false;
+                }
             }
         }
 

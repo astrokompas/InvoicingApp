@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using InvoicingApp.DataStorage;
 
 namespace InvoicingApp.Models
@@ -23,11 +24,14 @@ namespace InvoicingApp.Models
         public string PaymentMethod { get; set; } = "Przelew";
         public string BankAccount { get; set; }
         public string Notes { get; set; }
+
         public bool IsPaid => PaymentStatus == PaymentStatus.Paid;
         public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Unpaid;
         public List<Payment> Payments { get; set; } = new List<Payment>();
+
         public decimal PaidAmount => Payments?.Sum(p => p.Amount) ?? 0;
         public decimal RemainingAmount => TotalGross - PaidAmount;
+
         public DateTime? PaymentDate => PaymentStatus == PaymentStatus.Paid ?
             Payments.OrderByDescending(p => p.Date).FirstOrDefault()?.Date : null;
     }

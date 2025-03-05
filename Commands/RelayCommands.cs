@@ -96,6 +96,11 @@ namespace InvoicingApp.Commands
             }
         }
 
+        public void NotifyCanExecuteChanged()
+        {
+            CommandManager.InvalidateRequerySuggested();
+        }
+
         public event EventHandler CanExecuteChanged
         {
             add { CommandManager.RequerySuggested += value; }

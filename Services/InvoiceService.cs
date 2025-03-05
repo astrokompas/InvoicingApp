@@ -11,11 +11,16 @@ namespace InvoicingApp.Services
     public class InvoiceService : IInvoiceService
     {
         private readonly IDataStorage<Invoice> _invoiceStorage;
+        private readonly IDataStorage<Client> _clientStorage;
         private readonly ISettingsService _settingsService;
 
-        public InvoiceService(IDataStorage<Invoice> invoiceStorage, ISettingsService settingsService)
+        public InvoiceService(
+            IDataStorage<Invoice> invoiceStorage,
+            IDataStorage<Client> clientStorage,
+            ISettingsService settingsService)
         {
             _invoiceStorage = invoiceStorage;
+            _clientStorage = clientStorage;
             _settingsService = settingsService;
         }
 

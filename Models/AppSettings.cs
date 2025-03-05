@@ -32,5 +32,10 @@ namespace InvoicingApp.Models
 
         // Data retention
         public int InvoiceRetentionDays { get; set; } = 0; // 0 means never delete
+        public class RetentionOption
+        {
+            public int Days { get; set; }
+            public string DisplayName { get; set; }
+        }
     }
 }

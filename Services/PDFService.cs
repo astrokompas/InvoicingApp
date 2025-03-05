@@ -8,6 +8,7 @@ using InvoicingApp.Models;
 using System.Globalization;
 using System.Windows.Media;
 using System.Xml.Linq;
+using System.Drawing;
 
 namespace InvoicingApp.Services
 {
@@ -39,10 +40,10 @@ namespace InvoicingApp.Services
             XGraphics gfx = XGraphics.FromPdfPage(page);
 
             // Define fonts
-            XFont headerFont = new XFont("Arial", 16, XFontStyle.Bold);
-            XFont normalFont = new XFont("Arial", 10, XFontStyle.Regular);
-            XFont boldFont = new XFont("Arial", 10, XFontStyle.Bold);
-            XFont smallFont = new XFont("Arial", 8, XFontStyle.Regular);
+            XFont headerFont = new XFont("Arial Bold", 16);
+            XFont normalFont = new XFont("Arial", 10);
+            XFont boldFont = new XFont("Arial Bold", 10);
+            XFont smallFont = new XFont("Arial", 8);
 
             // Define colors
             XColor mainColor = XColor.FromArgb(62, 108, 178); // #3E6CB2

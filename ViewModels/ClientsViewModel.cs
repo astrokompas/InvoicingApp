@@ -11,7 +11,7 @@ using InvoicingApp.Services;
 
 namespace InvoicingApp.ViewModels
 {
-    public class ClientsViewModel : BaseViewModel
+    public class ClientsViewModel : BaseViewModel, IAsyncInitializable
     {
         private readonly IClientService _clientService;
         private readonly INavigationService _navigationService;
@@ -24,6 +24,7 @@ namespace InvoicingApp.ViewModels
         // For adding/editing clients
         private Client _currentClient = new Client();
         private bool _isEditing;
+        private bool _hasClients;
 
         public ClientsViewModel(
             IClientService clientService,
@@ -43,8 +44,26 @@ namespace InvoicingApp.ViewModels
             ClearSearchCommand = new RelayCommand(ClearSearch);
             RefreshCommand = new RelayCommand(Refresh);
 
-            // Load clients
-            LoadClientsAsync();
+            // Initialize empty collection
+            Clients = new ObservableCollection<Client>();
+        }
+
+        // IAsyncInitializable implementation
+        public async Task InitializeAsync()
+        {
+            try
+            {
+                IsLoading = true;
+                await LoadClientsAsync();
+            }
+            catch (Exception ex)
+            {
+                DisplayError(ex, "Failed to initialize");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         public ObservableCollection<Client> Clients
@@ -59,6 +78,7 @@ namespace InvoicingApp.ViewModels
                     OnPropertyChanged(nameof(FilteredClients));
                     OnPropertyChanged(nameof(TotalClientCount));
                     OnPropertyChanged(nameof(ActiveClientCount));
+                    HasClients = _clients.Count > 0;
                 }
             }
         }
@@ -97,6 +117,13 @@ namespace InvoicingApp.ViewModels
             set => SetProperty(ref _isEditing, value);
         }
 
+        // Added property to control empty state visibility
+        public bool HasClients
+        {
+            get => _hasClients;
+            set => SetProperty(ref _hasClients, value);
+        }
+
         // Statistics
         public int TotalClientCount => Clients?.Count ?? 0;
         public int ActiveClientCount => Clients?.Count(c => c.IsActive) ?? 0;
@@ -110,22 +137,10 @@ namespace InvoicingApp.ViewModels
         public ICommand ClearSearchCommand { get; }
         public ICommand RefreshCommand { get; }
 
-        private async void LoadClientsAsync()
+        private async Task LoadClientsAsync()
         {
-            try
-            {
-                IsLoading = true;
-                var clients = await _clientService.GetAllClientsAsync();
-                Clients = new ObservableCollection<Client>(clients);
-            }
-            catch (Exception ex)
-            {
-                DisplayError(ex, "Błąd podczas ładowania klientów");
-            }
-            finally
-            {
-                IsLoading = false;
-            }
+            var clients = await _clientService.GetAllClientsAsync();
+            Clients = new ObservableCollection<Client>(clients);
         }
 
         private bool FilterClients(object item)
@@ -285,7 +300,7 @@ namespace InvoicingApp.ViewModels
 
         private void Refresh()
         {
-            LoadClientsAsync();
+            _ = InitializeAsync();
         }
     }
 }

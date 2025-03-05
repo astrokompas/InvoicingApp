@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using InvoicingApp.Pages;
 using InvoicingApp.ViewModels;
+using InvoicingApp.Models;
 
 namespace InvoicingApp.Services
 {
@@ -15,10 +16,11 @@ namespace InvoicingApp.Services
         private readonly Dictionary<Type, Type> _viewModelToViewMapping;
         private readonly Stack<NavigationHistoryEntry> _navigationHistory;
 
-        public NavigationService(Frame frame, IServiceProvider serviceProvider)
+        public object CurrentViewModel { get; private set; }
+
+        public NavigationService(Frame frame)
         {
             _frame = frame;
-            _serviceProvider = serviceProvider;
             _navigationHistory = new Stack<NavigationHistoryEntry>();
 
             // Register ViewModel -> View mappings
@@ -33,6 +35,12 @@ namespace InvoicingApp.Services
             };
         }
 
+        public NavigationService(Frame frame, IServiceProvider serviceProvider) : this(frame)
+        {
+            _serviceProvider = serviceProvider;
+        }
+
+        // Synchronous navigation methods
         public void NavigateTo<TViewModel>(NavigationParameter parameter = null) where TViewModel : class
         {
             NavigateTo(typeof(TViewModel), parameter);
@@ -40,39 +48,66 @@ namespace InvoicingApp.Services
 
         public void NavigateTo(Type viewModelType, NavigationParameter parameter = null)
         {
+            // Call async method but don't await it
+            _ = NavigateToAsyncInternal(viewModelType, parameter);
+        }
+
+        // Asynchronous navigation methods
+        public Task NavigateToAsync<TViewModel>(NavigationParameter parameter = null) where TViewModel : class
+        {
+            return NavigateToAsync(typeof(TViewModel), parameter);
+        }
+
+        public Task NavigateToAsync(Type viewModelType, NavigationParameter parameter = null)
+        {
+            return NavigateToAsyncInternal(viewModelType, parameter);
+        }
+
+        private async Task NavigateToAsyncInternal(Type viewModelType, NavigationParameter parameter = null)
+        {
             if (!_viewModelToViewMapping.TryGetValue(viewModelType, out Type viewType))
             {
                 throw new ArgumentException($"No view found for ViewModel type {viewModelType.Name}");
             }
 
-            // Create the view instance
-            var view = _serviceProvider.GetService(viewType) as Page;
+            // Create view and view model
+            Page view;
+            BaseViewModel viewModel;
+
+            if (_serviceProvider != null)
+            {
+                // Use dependency injection
+                view = _serviceProvider.GetService(viewType) as Page;
+                viewModel = _serviceProvider.GetService(viewModelType) as BaseViewModel;
+            }
+            else
+            {
+                // Create directly
+                view = Activator.CreateInstance(viewType) as Page;
+                // Simple activation without dependencies - this would need more logic
+                viewModel = Activator.CreateInstance(viewModelType) as BaseViewModel;
+            }
+
             if (view == null)
             {
                 throw new InvalidOperationException($"Failed to create view of type {viewType.Name}");
             }
 
-            // Create and set the ViewModel
-            var viewModel = _serviceProvider.GetService(viewModelType);
             if (viewModel == null)
             {
                 throw new InvalidOperationException($"Failed to create ViewModel of type {viewModelType.Name}");
             }
 
-            // Apply parameters to ViewModel if needed
+            // Store current view model
+            CurrentViewModel = viewModel;
+
+            // Apply parameters if needed
             if (parameter != null && viewModel is IParameterizedViewModel paramViewModel)
             {
                 paramViewModel.ApplyParameter(parameter);
             }
 
-            // Initialize async ViewModel if it implements IAsyncInitializable
-            if (viewModel is IAsyncInitializable asyncViewModel)
-            {
-                // Note: We don't await this as we want to show the page immediately
-                // The page should handle its own loading state
-                _ = asyncViewModel.InitializeAsync();
-            }
-
+            // Set data context
             view.DataContext = viewModel;
 
             // Add to navigation history
@@ -82,8 +117,14 @@ namespace InvoicingApp.Services
                 Parameter = parameter
             });
 
-            // Navigate
+            // Navigate to view
             _frame.Navigate(view);
+
+            // Initialize async view model if needed
+            if (viewModel is IAsyncInitializable asyncViewModel)
+            {
+                await asyncViewModel.InitializeAsync();
+            }
         }
 
         public bool CanGoBack => _navigationHistory.Count > 1;
@@ -91,9 +132,7 @@ namespace InvoicingApp.Services
         public void GoBack()
         {
             if (!CanGoBack)
-            {
                 return;
-            }
 
             // Pop current page
             _navigationHistory.Pop();
@@ -101,59 +140,8 @@ namespace InvoicingApp.Services
             // Get previous page
             var previousEntry = _navigationHistory.Peek();
 
-            // Navigate to it
+            // Navigate to previous page
             NavigateTo(previousEntry.ViewModelType, previousEntry.Parameter);
         }
-    }
-
-    public interface INavigationService
-    {
-        void NavigateTo<TViewModel>(NavigationParameter parameter = null) where TViewModel : class;
-        void NavigateTo(Type viewModelType, NavigationParameter parameter = null);
-        bool CanGoBack { get; }
-        void GoBack();
-    }
-
-    public interface IParameterizedViewModel
-    {
-        void ApplyParameter(NavigationParameter parameter);
-    }
-
-    public class NavigationParameter
-    {
-        private readonly Dictionary<string, object> _parameters = new Dictionary<string, object>();
-
-        public NavigationParameter() { }
-
-        public NavigationParameter(string key, object value)
-        {
-            Add(key, value);
-        }
-
-        public void Add(string key, object value)
-        {
-            _parameters[key] = value;
-        }
-
-        public T Get<T>(string key)
-        {
-            if (_parameters.TryGetValue(key, out object value) && value is T typedValue)
-            {
-                return typedValue;
-            }
-
-            return default;
-        }
-
-        public bool Contains(string key)
-        {
-            return _parameters.ContainsKey(key);
-        }
-    }
-
-    public class NavigationHistoryEntry
-    {
-        public Type ViewModelType { get; set; }
-        public NavigationParameter Parameter { get; set; }
     }
 }

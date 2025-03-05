@@ -5,6 +5,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
 using InvoicingApp.Commands;
+using InvoicingApp.Services;
 using InvoicingApp.ViewModels;
 
 namespace InvoicingApp
@@ -17,6 +18,15 @@ namespace InvoicingApp
         {
             InitializeComponent();
 
+            // Create navigation and dialog services
+            var navigationService = new NavigationService(MainFrame);
+            var dialogService = new DialogService();
+
+            // Create view model
+            _viewModel = new MainWindowViewModel(navigationService, dialogService);
+            DataContext = _viewModel;
+
+            // Set up event handlers
             KeyDown += MainWindow_KeyDown;
 
             // Borderless window setup
@@ -39,9 +49,13 @@ namespace InvoicingApp
             Top = (workArea.Height - Height) / 2;
         }
 
-        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             UpdateClipping();
+
+            // Initialize with the first view - using delay to ensure UI is ready
+            await System.Threading.Tasks.Task.Delay(100);
+            await _viewModel.NavigateToInvoicesAsync();
         }
 
         private void MainWindow_StateChanged(object sender, EventArgs e)
@@ -78,17 +92,20 @@ namespace InvoicingApp
 
         private void UpdateClipping()
         {
-            MainWindowBorder.Clip = new RectangleGeometry
+            if (MainWindowBorder.ActualWidth > 0 && MainWindowBorder.ActualHeight > 0)
             {
-                RadiusX = 8,
-                RadiusY = 8,
-                Rect = new Rect(
-                    0,
-                    0,
-                    MainWindowBorder.ActualWidth,
-                    MainWindowBorder.ActualHeight
-                )
-            };
+                MainWindowBorder.Clip = new RectangleGeometry
+                {
+                    RadiusX = 8,
+                    RadiusY = 8,
+                    Rect = new Rect(
+                        0,
+                        0,
+                        MainWindowBorder.ActualWidth,
+                        MainWindowBorder.ActualHeight
+                    )
+                };
+            }
         }
 
         private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)

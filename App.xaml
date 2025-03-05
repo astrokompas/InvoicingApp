@@ -8,6 +8,16 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+            <converters:BoolToVisibilityInverseConverter x:Key="BoolToVisibilityInverseConverter" />
+            <converters:StringEqualsConverter x:Key="StringEqualsConverter" />
+            <converters:StringEqualsToVisibilityConverter x:Key="StringEqualsToVisibilityConverter" />
+            <converters:StringNotEqualsToVisibilityConverter x:Key="StringNotEqualsToVisibilityConverter" />
+            <converters:StringEmptyToVisibilityConverter x:Key="StringEmptyToVisibilityConverter" />
+            <converters:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVisibilityConverter" />
+            <converters:StatusToColorConverter x:Key="StatusToColorConverter" />
+            <converters:BoolToBackgroundConverter x:Key="BoolToBackgroundConverter" />
+            <converters:NullToAddEditClientConverter x:Key="NullToAddEditClientConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

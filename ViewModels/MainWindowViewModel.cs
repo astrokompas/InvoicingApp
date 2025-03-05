@@ -1,9 +1,9 @@
 ﻿using System;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using InvoicingApp.Commands;
 using InvoicingApp.Services;
+using InvoicingApp.ViewModels;
 
 namespace InvoicingApp.ViewModels
 {
@@ -11,6 +11,7 @@ namespace InvoicingApp.ViewModels
     {
         private readonly INavigationService _navigationService;
         private string _activeView;
+        private bool _isInitialized = false;
 
         public MainWindowViewModel(
             INavigationService navigationService,
@@ -19,14 +20,11 @@ namespace InvoicingApp.ViewModels
         {
             _navigationService = navigationService;
 
-            // Initialize commands using centralized command classes
-            NavigateToInvoicesCommand = new RelayCommand(NavigateToInvoices);
-            NavigateToClientsCommand = new RelayCommand(NavigateToClients);
-            NavigateToReportsCommand = new RelayCommand(NavigateToReports);
-            NavigateToSettingsCommand = new RelayCommand(NavigateToSettings);
-
-            // Default navigation to invoices
-            NavigateToInvoices();
+            // Initialize commands
+            NavigateToInvoicesCommand = new AsyncRelayCommand(NavigateToInvoicesAsync);
+            NavigateToClientsCommand = new AsyncRelayCommand(NavigateToClientsAsync);
+            NavigateToReportsCommand = new AsyncRelayCommand(NavigateToReportsAsync);
+            NavigateToSettingsCommand = new AsyncRelayCommand(NavigateToSettingsAsync);
         }
 
         public string ActiveView
@@ -40,28 +38,93 @@ namespace InvoicingApp.ViewModels
         public ICommand NavigateToReportsCommand { get; }
         public ICommand NavigateToSettingsCommand { get; }
 
-        private void NavigateToInvoices()
+        public async Task NavigateToInvoicesAsync()
         {
-            _navigationService.NavigateTo<InvoiceListViewModel>();
-            ActiveView = "Invoices";
+            if (_isInitialized && ActiveView == "Invoices")
+                return;
+
+            try
+            {
+                IsLoading = true;
+                await _navigationService.NavigateToAsync<InvoiceListViewModel>();
+                ActiveView = "Invoices";
+                _isInitialized = true;
+            }
+            catch (Exception ex)
+            {
+                // Log or display error
+                System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
-        private void NavigateToClients()
+        private async Task NavigateToClientsAsync()
         {
-            _navigationService.NavigateTo<ClientsViewModel>();
-            ActiveView = "Clients";
+            if (ActiveView == "Clients")
+                return;
+
+            try
+            {
+                IsLoading = true;
+                await _navigationService.NavigateToAsync<ClientsViewModel>();
+                ActiveView = "Clients";
+            }
+            catch (Exception ex)
+            {
+                // Log or display error
+                System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
-        private void NavigateToReports()
+        private async Task NavigateToReportsAsync()
         {
-            _navigationService.NavigateTo<ReportsViewModel>();
-            ActiveView = "Reports";
+            if (ActiveView == "Reports")
+                return;
+
+            try
+            {
+                IsLoading = true;
+                await _navigationService.NavigateToAsync<ReportsViewModel>();
+                ActiveView = "Reports";
+            }
+            catch (Exception ex)
+            {
+                // Log or display error
+                System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
-        private void NavigateToSettings()
+        private async Task NavigateToSettingsAsync()
         {
-            _navigationService.NavigateTo<SettingsViewModel>();
-            ActiveView = "Settings";
+            if (ActiveView == "Settings")
+                return;
+
+            try
+            {
+                IsLoading = true;
+                await _navigationService.NavigateToAsync<SettingsViewModel>();
+                ActiveView = "Settings";
+            }
+            catch (Exception ex)
+            {
+                // Log or display error
+                System.Diagnostics.Debug.WriteLine($"Navigation error: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
     }
 }

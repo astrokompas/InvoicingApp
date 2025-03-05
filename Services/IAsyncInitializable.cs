@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace InvoicingApp.ViewModels
+namespace InvoicingApp.Services
 {
     public interface IAsyncInitializable
     {

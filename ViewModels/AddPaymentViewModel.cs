@@ -8,7 +8,7 @@ using InvoicingApp.Services;
 
 namespace InvoicingApp.ViewModels
 {
-    public class AddPaymentViewModel : BaseViewModel, IParameterizedViewModel
+    public class AddPaymentViewModel : BaseViewModel, IParameterizedViewModel, IAsyncInitializable
     {
         private readonly IInvoiceService _invoiceService;
         private readonly INavigationService _navigationService;
@@ -20,6 +20,7 @@ namespace InvoicingApp.ViewModels
         private string _paymentMethod = "Przelew";
         private string _paymentNotes;
         private ObservableCollection<string> _paymentMethods;
+        private string _invoiceId;
 
         public AddPaymentViewModel(
             IInvoiceService invoiceService,
@@ -38,9 +39,6 @@ namespace InvoicingApp.ViewModels
 
             // Initialize empty collections
             _paymentMethods = new ObservableCollection<string>();
-
-            // Load data
-            _ = InitializeAsync();
         }
 
         public Invoice Invoice
@@ -55,7 +53,7 @@ namespace InvoicingApp.ViewModels
             set
             {
                 if (SetProperty(ref _paymentAmount, value))
-                    ((AsyncRelayCommand)AddPaymentCommand).RaiseCanExecuteChanged();
+                    ((AsyncRelayCommand)AddPaymentCommand).NotifyCanExecuteChanged();
             }
         }
 
@@ -90,12 +88,12 @@ namespace InvoicingApp.ViewModels
         {
             if (parameter != null && parameter.Contains("InvoiceId"))
             {
-                string invoiceId = parameter.Get<string>("InvoiceId");
-                _ = LoadInvoiceAsync(invoiceId);
+                _invoiceId = parameter.Get<string>("InvoiceId");
             }
         }
 
-        private async Task InitializeAsync()
+        // IAsyncInitializable implementation
+        public async Task InitializeAsync()
         {
             try
             {
@@ -105,6 +103,12 @@ namespace InvoicingApp.ViewModels
                 var settings = await _settingsService.GetSettingsAsync();
                 PaymentMethods = new ObservableCollection<string>(settings.PaymentMethods);
                 PaymentMethod = settings.DefaultPaymentMethod;
+
+                // Load invoice if ID was provided
+                if (!string.IsNullOrEmpty(_invoiceId))
+                {
+                    await LoadInvoiceAsync(_invoiceId);
+                }
             }
             catch (Exception ex)
             {
@@ -118,24 +122,11 @@ namespace InvoicingApp.ViewModels
 
         private async Task LoadInvoiceAsync(string invoiceId)
         {
-            try
-            {
-                IsLoading = true;
+            // Load invoice
+            Invoice = await _invoiceService.GetInvoiceByIdAsync(invoiceId);
 
-                // Load invoice
-                Invoice = await _invoiceService.GetInvoiceByIdAsync(invoiceId);
-
-                // Set default payment amount to remaining amount
-                PaymentAmount = Invoice?.RemainingAmount ?? 0;
-            }
-            catch (Exception ex)
-            {
-                DisplayError(ex, "Błąd podczas ładowania faktury");
-            }
-            finally
-            {
-                IsLoading = false;
-            }
+            // Set default payment amount to remaining amount
+            PaymentAmount = Invoice?.RemainingAmount ?? 0;
         }
 
         private async Task AddPayment()
