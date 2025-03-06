@@ -30,7 +30,7 @@ namespace InvoicingApp.ViewModels
             _clientService = clientService;
             _reportPDFService = new ReportPDFService(settingsService);
 
-            RefreshReportCommand = new AsyncRelayCommand(RefreshReport);
+            RefreshReportCommand = new AsyncRelayCommand(ExecuteRefreshReport);
             ExportReportCommand = new AsyncRelayCommand(ExportReport);
 
             Clients = new ObservableCollection<Client>();
@@ -42,7 +42,7 @@ namespace InvoicingApp.ViewModels
             {
                 IsLoading = true;
                 await LoadClientsAsync();
-                await RefreshReport();
+                await RefreshReport(false);
             }
             catch (Exception ex)
             {
@@ -111,7 +111,12 @@ namespace InvoicingApp.ViewModels
             }
         }
 
-        private async Task RefreshReport()
+        private async Task ExecuteRefreshReport()
+        {
+            await RefreshReport(true);
+        }
+
+        private async Task RefreshReport(bool showSuccessMessage = true)
         {
             try
             {
@@ -123,7 +128,10 @@ namespace InvoicingApp.ViewModels
                     SelectedClient?.Id
                 );
 
-                DisplayInformation("Raport został wygenerowany pomyślnie.", "Raport");
+                if (showSuccessMessage)
+                {
+                    DisplayInformation("Raport został wygenerowany pomyślnie.", "Raport");
+                }
             }
             catch (Exception ex)
             {

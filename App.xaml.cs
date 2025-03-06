@@ -14,6 +14,7 @@ namespace InvoicingApp
     public partial class App : Application
     {
         private readonly IServiceProvider _serviceProvider;
+        private MainWindow _mainWindow;
 
         public App()
         {
@@ -51,6 +52,13 @@ namespace InvoicingApp
             services.AddSingleton<IReportService, ReportService>();
             services.AddSingleton<IPDFService, PDFService>();
 
+            services.AddSingleton<MainWindow>();
+
+            services.AddSingleton<INavigationService>(provider => {
+                var mainWindow = provider.GetRequiredService<MainWindow>();
+                return new NavigationService(mainWindow.MainFrame, provider);
+            });
+
             // Additional Services
             services.AddSingleton<IBackupService>(sp =>
                 new BackupService(
@@ -76,8 +84,6 @@ namespace InvoicingApp
             services.AddTransient<ReportsPage>();
             services.AddTransient<SettingsPage>();
             services.AddTransient<AddPaymentPage>();
-
-            services.AddSingleton<MainWindow>();
         }
 
         private void EnsureDirectoryExists(string path)
@@ -94,14 +100,10 @@ namespace InvoicingApp
             base.OnStartup(e);
 
             var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
-
-            var navigationService = new NavigationService(mainWindow.MainFrame, _serviceProvider);
-
-            var mainWindowViewModel = new MainWindowViewModel(navigationService,
-                                                              _serviceProvider.GetRequiredService<IDialogService>());
+            var navigationService = _serviceProvider.GetRequiredService<INavigationService>();
+            var mainWindowViewModel = _serviceProvider.GetRequiredService<MainWindowViewModel>();
 
             mainWindow.DataContext = mainWindowViewModel;
-
             mainWindow.Show();
 
             navigationService.NavigateToAsync<InvoiceListViewModel>().ContinueWith(_ =>
