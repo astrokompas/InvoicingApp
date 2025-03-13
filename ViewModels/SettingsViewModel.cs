@@ -26,6 +26,7 @@ namespace InvoicingApp.ViewModels
         private string _newCurrency;
         private string _logoPath;
         private bool _hasUnsavedChanges;
+        private int _selectedRetentionDays;
 
         public SettingsViewModel(
             ISettingsService settingsService,
@@ -51,6 +52,15 @@ namespace InvoicingApp.ViewModels
 
             _vatRates = new ObservableCollection<string>();
             _currencies = new ObservableCollection<string>();
+
+            RetentionOptions = new ObservableCollection<RetentionOption>
+            {
+                new RetentionOption { Days = 0, DisplayName = "Nigdy nie usuwaj" },
+                new RetentionOption { Days = 90, DisplayName = "90 dni" },
+                new RetentionOption { Days = 180, DisplayName = "180 dni" },
+                new RetentionOption { Days = 270, DisplayName = "270 dni" },
+                new RetentionOption { Days = 360, DisplayName = "360 dni" }
+            };
         }
 
         public async Task InitializeAsync()
@@ -76,7 +86,10 @@ namespace InvoicingApp.ViewModels
             set
             {
                 if (SetProperty(ref _settings, value))
+                {
                     HasUnsavedChanges = true;
+                    SelectedRetentionDays = value?.InvoiceRetentionDays ?? 0;
+                }
             }
         }
 
@@ -235,14 +248,24 @@ namespace InvoicingApp.ViewModels
             }
         }
 
-        public ObservableCollection<RetentionOption> RetentionOptions { get; } = new ObservableCollection<RetentionOption>
+        public int SelectedRetentionDays
         {
-            new RetentionOption { Days = 0, DisplayName = "Nigdy nie usuwaj" },
-            new RetentionOption { Days = 90, DisplayName = "90 dni" },
-            new RetentionOption { Days = 180, DisplayName = "180 dni" },
-            new RetentionOption { Days = 270, DisplayName = "270 dni" },
-            new RetentionOption { Days = 360, DisplayName = "360 dni" }
-        };
+            get => _selectedRetentionDays;
+            set
+            {
+                if (SetProperty(ref _selectedRetentionDays, value))
+                {
+                    if (Settings != null)
+                    {
+                        Settings.InvoiceRetentionDays = value;
+                        HasUnsavedChanges = true;
+                    }
+                    OnPropertyChanged(nameof(InvoiceRetentionDays));
+                }
+            }
+        }
+
+        public ObservableCollection<RetentionOption> RetentionOptions { get; }
 
         public ICommand SaveCompanyDataCommand { get; }
         public ICommand SaveSettingsCommand { get; }
@@ -264,6 +287,8 @@ namespace InvoicingApp.ViewModels
 
             VatRates = new ObservableCollection<string>(settings.VatRates);
             Currencies = new ObservableCollection<string>(settings.Currencies);
+
+            SelectedRetentionDays = settings.InvoiceRetentionDays;
 
             HasUnsavedChanges = false;
         }
@@ -303,6 +328,7 @@ namespace InvoicingApp.ViewModels
 
                     Settings.VatRates = new List<string>(VatRates);
                     Settings.Currencies = new List<string>(Currencies);
+                    Settings.InvoiceRetentionDays = SelectedRetentionDays; // Make sure to save the selected value
 
                     await _settingsService.SaveSettingsAsync(Settings);
                     HasUnsavedChanges = false;
@@ -331,6 +357,7 @@ namespace InvoicingApp.ViewModels
                     Settings.VatRates = new List<string>(VatRates);
                     Settings.Currencies = new List<string>(Currencies);
                     Settings.CompanyLogoPath = LogoPath;
+                    Settings.InvoiceRetentionDays = SelectedRetentionDays; // Make sure to save the selected value
 
                     await _settingsService.SaveSettingsAsync(Settings);
                     HasUnsavedChanges = false;

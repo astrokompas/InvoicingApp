@@ -13,10 +13,13 @@ namespace InvoicingApp
     public partial class MainWindow : Window
     {
         private MainWindowViewModel _viewModel;
+        private readonly IDialogService _dialogService;
 
-        public MainWindow()
+        public MainWindow(IDialogService dialogService)
         {
             InitializeComponent();
+
+            _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
 
             KeyDown += MainWindow_KeyDown;
 
@@ -33,6 +36,8 @@ namespace InvoicingApp
             var workArea = SystemParameters.WorkArea;
             Left = (workArea.Width - Width) / 2;
             Top = (workArea.Height - Height) / 2;
+
+            Closing += MainWindow_Closing;
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -154,6 +159,16 @@ namespace InvoicingApp
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             Close();
+        }
+
+        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            bool result = _dialogService.ShowQuestion("Czy na pewno chcesz zamknąć aplikację?", "Potwierdzenie zamknięcia");
+
+            if (!result)
+            {
+                e.Cancel = true;
+            }
         }
     }
 }

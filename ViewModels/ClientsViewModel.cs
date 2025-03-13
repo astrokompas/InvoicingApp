@@ -8,6 +8,7 @@ using System.Windows.Input;
 using InvoicingApp.Commands;
 using InvoicingApp.Models;
 using InvoicingApp.Services;
+using InvoicingApp.ViewModels;
 
 namespace InvoicingApp.ViewModels
 {

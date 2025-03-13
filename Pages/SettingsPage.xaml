@@ -365,7 +365,7 @@
                                                    VerticalAlignment="Center" 
                                                    Margin="0,0,10,0"/>
                                         <ComboBox ItemsSource="{Binding RetentionOptions}" 
-                                                  SelectedValue="{Binding InvoiceRetentionDays}"
+                                                  SelectedValue="{Binding SelectedRetentionDays}"
                                                   SelectedValuePath="Days"
                                                   DisplayMemberPath="DisplayName"
                                                   Style="{StaticResource ModernComboBoxStyle}" 

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using InvoicingApp.Models;
-
 namespace InvoicingApp.Services
 {
     public interface IInvoiceService
@@ -15,6 +14,7 @@ namespace InvoicingApp.Services
         Task<IEnumerable<Invoice>> GetInvoicesByDateRangeAsync(DateTime startDate, DateTime endDate);
         Task<IEnumerable<Invoice>> GetUnpaidInvoicesAsync();
         string GenerateNextInvoiceNumber();
+        Task<string> GenerateNextInvoiceNumberAsync();
         Task PurgeOldInvoicesAsync();
     }
 }

@@ -37,7 +37,7 @@ namespace InvoicingApp.Services
 
         public async Task<IEnumerable<Invoice>> GetAllInvoicesWithClientsAsync()
         {
-            var invoices = await GetAllInvoicesAsync();
+            var invoices = await _invoiceStorage.GetAllAsync();
             var clients = await _clientStorage.GetAllAsync();
 
             // Create a dictionary for faster lookups
@@ -59,13 +59,28 @@ namespace InvoicingApp.Services
             try
             {
                 var invoices = await _invoiceStorage.GetAllAsync();
+                var clientIds = invoices
+                    .Where(i => !string.IsNullOrEmpty(i.ClientId))
+                    .Select(i => i.ClientId)
+                    .Distinct()
+                    .ToList();
 
-                // Eagerly load client information
+                // Load all required clients in one go
+                var clientTasks = clientIds.Select(id => _clientStorage.GetByIdAsync(id));
+                var clients = await Task.WhenAll(clientTasks);
+
+                // Create a lookup dictionary
+                var clientDict = clients
+                    .Where(c => c != null)
+                    .ToDictionary(c => c.Id);
+
+                // Assign clients to invoices
                 foreach (var invoice in invoices)
                 {
-                    if (!string.IsNullOrEmpty(invoice.ClientId))
+                    if (!string.IsNullOrEmpty(invoice.ClientId) &&
+                        clientDict.TryGetValue(invoice.ClientId, out var client))
                     {
-                        invoice.Client = await _clientStorage.GetByIdAsync(invoice.ClientId);
+                        invoice.Client = client;
                     }
                 }
 
@@ -110,17 +125,17 @@ namespace InvoicingApp.Services
             return await _invoiceStorage.QueryAsync(i => !i.IsPaid);
         }
 
-        public string GenerateNextInvoiceNumber()
+        public async Task<string> GenerateNextInvoiceNumberAsync()
         {
-            // Get all invoices and find the latest one
-            var allInvoices = _invoiceStorage.GetAllAsync().Result.ToList();
+            // Get all invoices asynchronously
+            var allInvoices = await _invoiceStorage.GetAllAsync();
 
             // Default format: FV/001/YYYY
             string prefix = "FV";
             int sequenceNumber = 1;
             int year = DateTime.Now.Year;
 
-            if (allInvoices.Count > 0)
+            if (allInvoices.Any())
             {
                 // Extract the sequence number from the latest invoice
                 var latestInvoice = allInvoices
@@ -145,6 +160,20 @@ namespace InvoicingApp.Services
 
             // Format: FV/001/2025
             return $"{prefix}/{sequenceNumber:D3}/{year}";
+        }
+
+        public string GenerateNextInvoiceNumber()
+        {
+            try
+            {
+                // Create a new task and run it on a different thread
+                return Task.Run(() => GenerateNextInvoiceNumberAsync()).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generating invoice number: {ex.Message}");
+                return $"FV/001/{DateTime.Now.Year}";
+            }
         }
 
         public async Task PurgeOldInvoicesAsync()

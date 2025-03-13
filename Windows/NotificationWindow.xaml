@@ -1,0 +1,60 @@
+﻿<Window x:Class="InvoicingApp.Windows.NotificationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Notification" 
+        Height="Auto" 
+        Width="350"
+        SizeToContent="Height"
+        WindowStyle="None" 
+        ResizeMode="NoResize"
+        AllowsTransparency="True" 
+        Background="Transparent"
+        ShowInTaskbar="False"
+        Topmost="True">
+
+    <Border x:Name="MainBorder" 
+            Background="#3E6CB2" 
+            CornerRadius="4"
+            Padding="15,10">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Icon -->
+            <TextBlock x:Name="IconText" 
+                       Grid.Column="0"
+                       Text="ℹ" 
+                       FontSize="18" 
+                       Margin="0,0,12,0" 
+                       VerticalAlignment="Top"
+                       Foreground="White" />
+
+            <!-- Content -->
+            <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                <TextBlock x:Name="TitleText" 
+                           FontWeight="SemiBold" 
+                           Foreground="White" 
+                           Margin="0,0,0,5" />
+                <TextBlock x:Name="MessageText" 
+                           TextWrapping="Wrap" 
+                           Foreground="White" />
+            </StackPanel>
+
+            <!-- Close Button -->
+            <Button Grid.Column="2" 
+                    Content="✕" 
+                    Foreground="White"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Width="24" 
+                    Height="24" 
+                    VerticalAlignment="Top" 
+                    HorizontalAlignment="Right"
+                    Margin="0,-5,-5,0"
+                    Click="CloseButton_Click" />
+        </Grid>
+    </Border>
+</Window>

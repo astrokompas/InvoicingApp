@@ -36,7 +36,7 @@ namespace InvoicingApp.ViewModels
 
             _currentInvoice = new Invoice
             {
-                InvoiceNumber = _invoiceService.GenerateNextInvoiceNumber(),
+                InvoiceNumber = "Generowanie...",
                 InvoiceDate = DateTime.Now,
                 SellingDate = DateTime.Now,
                 DueDate = DateTime.Now.AddDays(14),
@@ -73,6 +73,12 @@ namespace InvoicingApp.ViewModels
 
                 var clients = await _clientService.GetAllClientsAsync();
                 AvailableClients = new ObservableCollection<Client>(clients);
+
+                // Only generate invoice number for new invoices (not loaded ones)
+                if (CurrentInvoice != null && CurrentInvoice.InvoiceNumber == "Generowanie...")
+                {
+                    CurrentInvoice.InvoiceNumber = await _invoiceService.GenerateNextInvoiceNumberAsync();
+                }
 
                 if (CurrentInvoice.Items.Count == 0)
                 {
