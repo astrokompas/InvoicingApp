@@ -8,16 +8,13 @@ namespace InvoicingApp.Converters
 {
     public class BoolToVisibilityConverter : IValueConverter
     {
+        public bool Inverse { get; set; }
+
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is bool boolValue)
             {
-                // Check if we need to invert the logic
-                if (parameter is string param && param.Equals("Inverse", StringComparison.OrdinalIgnoreCase))
-                {
-                    boolValue = !boolValue;
-                }
-
+                boolValue = Inverse ? !boolValue : boolValue;
                 return boolValue ? Visibility.Visible : Visibility.Collapsed;
             }
 
@@ -28,15 +25,8 @@ namespace InvoicingApp.Converters
         {
             if (value is Visibility visibility)
             {
-                bool result = visibility == Visibility.Visible;
-
-                // Check if we need to invert the logic
-                if (parameter is string param && param.Equals("Inverse", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = !result;
-                }
-
-                return result;
+                bool boolValue = visibility == Visibility.Visible;
+                return Inverse ? !boolValue : boolValue;
             }
 
             return false;

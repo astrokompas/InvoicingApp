@@ -2,7 +2,6 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
-using System.Windows.Media;
 
 namespace InvoicingApp.Converters
 {
@@ -10,19 +9,14 @@ namespace InvoicingApp.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is string stringValue)
-            {
-                return string.IsNullOrEmpty(stringValue)
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-            }
-
-            return Visibility.Visible;
+            return (value as string == null || string.IsNullOrEmpty(value as string))
+                ? Visibility.Visible
+                : Visibility.Collapsed;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return Binding.DoNothing;
+            throw new NotImplementedException();
         }
     }
 }

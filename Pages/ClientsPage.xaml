@@ -44,117 +44,179 @@
 
             <!-- Search box -->
             <Border Grid.Column="1" 
-                    Background="{StaticResource BackgroundLighterBrush}" 
-                    CornerRadius="4" 
-                    Margin="0,0,20,0" 
-                    Width="250"
-                    Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibilityInverseConverter}}">
+        Background="{StaticResource BackgroundLighterBrush}" 
+        CornerRadius="4" 
+        Margin="0,0,20,0" 
+        Width="250"
+        Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibilityInverseConverter}}">
                 <Grid>
                     <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" 
-                             Style="{StaticResource ModernTextBoxStyle}" 
-                             BorderThickness="0" 
-                             Background="Transparent" 
-                             Padding="10,8,30,8" 
-                             Foreground="{StaticResource GrayBrush}" 
-                             VerticalAlignment="Center"/>
+                 Style="{StaticResource ModernTextBoxStyle}" 
+                 BorderThickness="0" 
+                 Background="Transparent" 
+                 Padding="10,8,30,8" 
+                 Foreground="{StaticResource WhiteBrush}" 
+                 CaretBrush="{StaticResource WhiteBrush}"
+                 SelectionBrush="{StaticResource PrimaryBrush}"
+                 VerticalAlignment="Center"/>
                     <TextBlock Text="Szukaj..." 
-                               Foreground="{StaticResource GrayBrush}" 
-                               Margin="10,0,0,0" 
-                               VerticalAlignment="Center" 
-                               HorizontalAlignment="Left" 
-                               IsHitTestVisible="False" 
-                               Visibility="{Binding SearchText, Converter={StaticResource StringEmptyToVisibilityConverter}}"/>
+                   Foreground="{StaticResource GrayBrush}" 
+                   Margin="10,0,0,0" 
+                   VerticalAlignment="Center" 
+                   HorizontalAlignment="Left" 
+                   IsHitTestVisible="False" 
+                   Visibility="{Binding SearchText, Converter={StaticResource StringEmptyToVisibilityConverter}}"/>
                     <Button Content="✕" 
-                            Style="{StaticResource TitleBarButtonStyle}" 
-                            Width="30" 
-                            Height="30" 
-                            HorizontalAlignment="Right" 
-                            VerticalAlignment="Center" 
-                            Command="{Binding ClearSearchCommand}" 
-                            Visibility="{Binding SearchText, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"/>
+                Style="{StaticResource TitleBarButtonStyle}" 
+                Width="30" 
+                Height="30" 
+                HorizontalAlignment="Right" 
+                VerticalAlignment="Center" 
+                Command="{Binding ClearSearchCommand}" 
+                Visibility="{Binding SearchText, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"/>
                 </Grid>
             </Border>
 
             <!-- Actions -->
             <StackPanel Grid.Column="2" Orientation="Horizontal">
                 <Button Content="Dodaj klienta" 
-                        Style="{StaticResource ActionButtonStyle}" 
-                        Width="120" 
-                        Height="36" 
-                        Command="{Binding AddClientCommand}"
-                        ToolTip="Dodaj nowego klienta (Ctrl+N)"
-                        Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibilityInverseConverter}}">
+            Style="{StaticResource ActionButtonStyle}" 
+            Width="140" 
+            Height="40" 
+            Command="{Binding AddClientCommand}"
+            ToolTip="Dodaj nowego klienta (Ctrl+N)"
+            Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibilityInverseConverter}}">
                     <Button.ContentTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="+" FontSize="16" Margin="0,0,5,0"/>
+                                <TextBlock Text="+" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                 <TextBlock Text="Dodaj klienta" VerticalAlignment="Center"/>
                             </StackPanel>
                         </DataTemplate>
                     </Button.ContentTemplate>
                 </Button>
                 <Button Content="Odśwież" 
-                        Style="{StaticResource SecondaryButtonStyle}" 
-                        Width="100" 
-                        Height="36" 
-                        Margin="10,0,0,0" 
-                        Command="{Binding RefreshCommand}"
-                        ToolTip="Odśwież listę klientów (F5)"
-                        Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibilityInverseConverter}}"/>
+            Style="{StaticResource SecondaryButtonStyle}" 
+            Width="100" 
+            Height="40" 
+            Margin="10,0,0,0" 
+            Command="{Binding RefreshCommand}"
+            ToolTip="Odśwież listę klientów (F5)"
+            Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibilityInverseConverter}}"/>
             </StackPanel>
         </Grid>
 
         <!-- Main content - Clients List -->
         <Border Grid.Row="1" 
-                Background="{StaticResource BackgroundAlternateBrush}" 
-                CornerRadius="8" 
-                Effect="{StaticResource SmallShadow}"
-                Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibilityInverseConverter}}">
+        Background="{StaticResource BackgroundAlternateBrush}" 
+        CornerRadius="8" 
+        Effect="{StaticResource SmallShadow}"
+        Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibilityInverseConverter}}">
             <Grid>
                 <DataGrid ItemsSource="{Binding FilteredClients}" 
-                          SelectedItem="{Binding SelectedClient}" 
-                          Style="{StaticResource ModernDataGridStyle}" 
-                          Margin="0" 
-                          ColumnHeaderHeight="48" 
-                          CanUserSortColumns="True">
+                  SelectedItem="{Binding SelectedClient}" 
+                  Style="{StaticResource ModernDataGridStyle}" 
+                  Margin="0" 
+                  ColumnHeaderHeight="48" 
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Auto"
+                  MinColumnWidth="100"
+                  CanUserSortColumns="True">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Nazwa" 
-                                            Binding="{Binding Name}" 
-                                            Width="*"/>
+                        Binding="{Binding Name}" 
+                        Width="*">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextWrapping" Value="Wrap"/>
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="0,6"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
                         <DataGridTextColumn Header="Adres" 
-                                            Binding="{Binding Address}" 
-                                            Width="2*"/>
+                        Binding="{Binding Address}" 
+                        Width="2*">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextWrapping" Value="Wrap"/>
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="0,6"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
                         <DataGridTextColumn Header="NIP" 
-                                            Binding="{Binding TaxID}" 
-                                            Width="*"/>
+                        Binding="{Binding TaxID}" 
+                        Width="*">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextWrapping" Value="Wrap"/>
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
                         <DataGridTextColumn Header="Osoba kontaktowa" 
-                                            Binding="{Binding ContactPerson}" 
-                                            Width="*"/>
+                        Binding="{Binding ContactPerson}" 
+                        Width="*">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextWrapping" Value="Wrap"/>
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="0,6"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
                         <DataGridTextColumn Header="Email" 
-                                            Binding="{Binding Email}" 
-                                            Width="*"/>
+                        Binding="{Binding Email}" 
+                        Width="*">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextWrapping" Value="Wrap"/>
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
                         <DataGridTextColumn Header="Telefon" 
-                                            Binding="{Binding Phone}" 
-                                            Width="*"/>
-                        <DataGridTemplateColumn Header="" Width="150">
+                        Binding="{Binding Phone}" 
+                        Width="*">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextWrapping" Value="Wrap"/>
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTemplateColumn Header="Status" Width="100">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10,0,0,0">
+                                        <Ellipse Width="12" Height="12" Fill="{Binding IsActive, Converter={StaticResource BoolToActiveBrushConverter}}" 
+                         VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBlock Text="{Binding IsActive, Converter={StaticResource BoolToActiveTextConverter}}" 
+                           VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="" Width="160">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                         <Button ToolTip="Edytuj klienta" 
-                                                Style="{StaticResource SecondaryButtonStyle}" 
-                                                Width="36" 
-                                                Height="28" 
-                                                Margin="2" 
-                                                Command="{Binding DataContext.EditClientCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}">
-                                            <TextBlock Text="✎" FontSize="14"/>
+                        Style="{StaticResource SecondaryButtonStyle}" 
+                        Width="45" 
+                        Height="36" 
+                        Margin="2" 
+                        Command="{Binding DataContext.EditClientCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}">
+                                            <TextBlock Text="✎" FontSize="15" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,0"/>
                                         </Button>
                                         <Button ToolTip="Usuń klienta" 
-                                                Style="{StaticResource SecondaryButtonStyle}" 
-                                                Width="36" 
-                                                Height="28" 
-                                                Margin="2" 
-                                                Command="{Binding DataContext.DeleteClientCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}">
-                                            <TextBlock Text="✕" FontSize="14" Foreground="{StaticResource AccentBrush}"/>
+                        Style="{StaticResource SecondaryButtonStyle}" 
+                        Width="45" 
+                        Height="36" 
+                        Margin="2" 
+                        Command="{Binding DataContext.DeleteClientCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}">
+                                            <TextBlock Text="✕" FontSize="15" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,0"/>
                                         </Button>
                                     </StackPanel>
                                 </DataTemplate>
@@ -222,78 +284,120 @@
                            Margin="0,0,0,20"/>
 
                 <!-- Form Fields -->
+                <!-- Form Fields -->
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Grid Margin="0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
                             <TextBlock Text="Nazwa:" 
-                                       Foreground="{StaticResource WhiteBrush}" 
-                                       Width="150" 
-                                       VerticalAlignment="Center"/>
+                       Foreground="{StaticResource WhiteBrush}" 
+                       Grid.Column="0" 
+                       VerticalAlignment="Center"/>
                             <TextBox Text="{Binding CurrentClient.Name, UpdateSourceTrigger=PropertyChanged}" 
-                                     Style="{StaticResource ModernTextBoxStyle}" 
-                                     Width="300"/>
-                        </StackPanel>
+                     Style="{StaticResource ModernTextBoxStyle}" 
+                     Width="300"
+                     Grid.Column="1"
+                     HorizontalAlignment="Left"/>
+                        </Grid>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Grid Margin="0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
                             <TextBlock Text="Adres:" 
-                                       Foreground="{StaticResource WhiteBrush}" 
-                                       Width="150" 
-                                       VerticalAlignment="Center"/>
+                       Foreground="{StaticResource WhiteBrush}" 
+                       Grid.Column="0" 
+                       VerticalAlignment="Center"/>
                             <TextBox Text="{Binding CurrentClient.Address, UpdateSourceTrigger=PropertyChanged}" 
-                                     Style="{StaticResource ModernTextBoxStyle}" 
-                                     Width="300"/>
-                        </StackPanel>
+                     Style="{StaticResource ModernTextBoxStyle}" 
+                     Width="300"
+                     Grid.Column="1"
+                     HorizontalAlignment="Left"/>
+                        </Grid>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Grid Margin="0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
                             <TextBlock Text="NIP:" 
-                                       Foreground="{StaticResource WhiteBrush}" 
-                                       Width="150" 
-                                       VerticalAlignment="Center"/>
+                       Foreground="{StaticResource WhiteBrush}" 
+                       Grid.Column="0" 
+                       VerticalAlignment="Center"/>
                             <TextBox Text="{Binding CurrentClient.TaxID, UpdateSourceTrigger=PropertyChanged}" 
-                                     Style="{StaticResource ModernTextBoxStyle}" 
-                                     Width="300"/>
-                        </StackPanel>
+                     Style="{StaticResource ModernTextBoxStyle}" 
+                     Width="300"
+                     Grid.Column="1"
+                     HorizontalAlignment="Left"/>
+                        </Grid>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Grid Margin="0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
                             <TextBlock Text="Osoba kontaktowa:" 
-                                       Foreground="{StaticResource WhiteBrush}" 
-                                       Width="150" 
-                                       VerticalAlignment="Center"/>
+                       Foreground="{StaticResource WhiteBrush}" 
+                       Grid.Column="0" 
+                       VerticalAlignment="Center"/>
                             <TextBox Text="{Binding CurrentClient.ContactPerson, UpdateSourceTrigger=PropertyChanged}" 
-                                     Style="{StaticResource ModernTextBoxStyle}" 
-                                     Width="300"/>
-                        </StackPanel>
+                     Style="{StaticResource ModernTextBoxStyle}" 
+                     Width="300"
+                     Grid.Column="1"
+                     HorizontalAlignment="Left"/>
+                        </Grid>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Grid Margin="0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
                             <TextBlock Text="Email:" 
-                                       Foreground="{StaticResource WhiteBrush}" 
-                                       Width="150" 
-                                       VerticalAlignment="Center"/>
+                       Foreground="{StaticResource WhiteBrush}" 
+                       Grid.Column="0" 
+                       VerticalAlignment="Center"/>
                             <TextBox Text="{Binding CurrentClient.Email, UpdateSourceTrigger=PropertyChanged}" 
-                                     Style="{StaticResource ModernTextBoxStyle}" 
-                                     Width="300"/>
-                        </StackPanel>
+                     Style="{StaticResource ModernTextBoxStyle}" 
+                     Width="300"
+                     Grid.Column="1"
+                     HorizontalAlignment="Left"/>
+                        </Grid>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Grid Margin="0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
                             <TextBlock Text="Telefon:" 
-                                       Foreground="{StaticResource WhiteBrush}" 
-                                       Width="150" 
-                                       VerticalAlignment="Center"/>
+                       Foreground="{StaticResource WhiteBrush}" 
+                       Grid.Column="0" 
+                       VerticalAlignment="Center"/>
                             <TextBox Text="{Binding CurrentClient.Phone, UpdateSourceTrigger=PropertyChanged}" 
-                                     Style="{StaticResource ModernTextBoxStyle}" 
-                                     Width="300"/>
-                        </StackPanel>
+                     Style="{StaticResource ModernTextBoxStyle}" 
+                     Width="300"
+                     Grid.Column="1"
+                     HorizontalAlignment="Left"/>
+                        </Grid>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,10">
+                        <Grid Margin="0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
                             <TextBlock Text="Status:" 
-                                       Foreground="{StaticResource WhiteBrush}" 
-                                       Width="150" 
-                                       VerticalAlignment="Center"/>
+                       Foreground="{StaticResource WhiteBrush}" 
+                       Grid.Column="0" 
+                       VerticalAlignment="Center"/>
                             <CheckBox Content="Aktywny" 
-                                      IsChecked="{Binding CurrentClient.IsActive}" 
-                                      Foreground="{StaticResource WhiteBrush}" 
-                                      VerticalAlignment="Center"/>
-                        </StackPanel>
+                      IsChecked="{Binding CurrentClient.IsActive}" 
+                      Foreground="{StaticResource WhiteBrush}" 
+                      Grid.Column="1"
+                      VerticalAlignment="Center"/>
+                        </Grid>
                     </StackPanel>
                 </ScrollViewer>
 

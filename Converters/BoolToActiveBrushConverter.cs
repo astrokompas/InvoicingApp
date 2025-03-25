@@ -1,20 +1,21 @@
 ﻿using System;
 using System.Globalization;
 using System.Windows.Data;
+using System.Windows.Media;
 
 namespace InvoicingApp.Converters
 {
-    public class NullToAddEditClientConverter : IValueConverter
+    public class BoolToActiveBrushConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            // Check if value is null or empty string
-            if (value == null || string.IsNullOrEmpty(value as string))
+            if (value is bool isActive)
             {
-                return "Dodaj klienta";
+                return isActive
+                    ? new SolidColorBrush(Color.FromRgb(76, 175, 80)) // Green for active
+                    : new SolidColorBrush(Color.FromRgb(226, 43, 43)); // Red for inactive
             }
-
-            return "Edytuj klienta";
+            return new SolidColorBrush(Colors.Gray);
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

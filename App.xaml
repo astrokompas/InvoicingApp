@@ -20,6 +20,8 @@
             <converters:StatusToColorConverter x:Key="StatusToColorConverter" />
             <converters:BoolToBackgroundConverter x:Key="BoolToBackgroundConverter" />
             <converters:NullToAddEditClientConverter x:Key="NullToAddEditClientConverter" />
+            <converters:BoolToActiveBrushConverter x:Key="BoolToActiveBrushConverter"/>
+            <converters:BoolToActiveTextConverter x:Key="BoolToActiveTextConverter"/>
 
             <!-- Custom Triggers for Navigation -->
             <Style x:Key="NavButtonActiveStyle" TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">

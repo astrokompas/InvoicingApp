@@ -1,17 +1,19 @@
 ﻿using System;
 using System.Globalization;
-using System.Windows;
 using System.Windows.Data;
+using System.Windows.Media;
 
 namespace InvoicingApp.Converters
 {
-    public class StringNotEmptyToVisibilityConverter : IValueConverter
+    public class BoolToActiveTextConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return (!string.IsNullOrEmpty(value as string))
-                ? Visibility.Visible
-                : Visibility.Collapsed;
+            if (value is bool isActive)
+            {
+                return isActive ? "Aktywny" : "Nieaktywny";
+            }
+            return "Nieznany";
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
