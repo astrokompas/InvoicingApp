@@ -63,8 +63,13 @@ namespace InvoicingApp.Models
         public decimal TotalNet { get; set; }
         public decimal TotalVat { get; set; }
         public decimal TotalGross { get; set; }
-
         // Parent invoice reference
         public string InvoiceId { get; set; }
+
+        // Added property for display in the UI
+        public int Index { get; set; }
+
+        // For alternating row colors
+        public bool IsAlternate { get; set; }
     }
 }

@@ -4,15 +4,22 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:InvoicingApp.Pages"
+      xmlns:converters="clr-namespace:InvoicingApp.Converters"
       mc:Ignorable="d"
       Title="Edycja faktury" Background="{StaticResource BackgroundBrush}">
+
+    <Page.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:BoolToBackgroundConverter x:Key="BoolToBackgroundConverter"/>
+        <converters:StringEqualsConverter x:Key="StringEqualsConverter"/>
+        <converters:StringEqualsToVisibilityConverter x:Key="StringEqualsToVisibilityConverter"/>
+        <converters:StringNotEqualsToVisibilityConverter x:Key="StringNotEqualsToVisibilityConverter"/>
+        <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+    </Page.Resources>
 
     <Page.InputBindings>
         <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveInvoiceCommand}" />
         <KeyBinding Key="P" Modifiers="Control" Command="{Binding ExportPdfCommand}" />
-        <KeyBinding Key="D1" Modifiers="Control" Command="{Binding SwitchModeCommand}" CommandParameter="InvoiceDetails" />
-        <KeyBinding Key="D2" Modifiers="Control" Command="{Binding SwitchModeCommand}" CommandParameter="Items" />
-        <KeyBinding Key="D3" Modifiers="Control" Command="{Binding SwitchModeCommand}" CommandParameter="Payment" />
         <KeyBinding Key="N" Modifiers="Control" Command="{Binding AddItemCommand}" />
         <KeyBinding Key="Escape" Command="{Binding CancelCommand}" />
     </Page.InputBindings>
@@ -22,50 +29,25 @@
             <RowDefinition Height="Auto"/>
             <!-- Toolbar -->
             <RowDefinition Height="*"/>
-            <!-- Invoice Preview -->
+            <!-- Invoice Content -->
         </Grid.RowDefinitions>
 
         <!-- Toolbar -->
         <Border Grid.Row="0" Background="#0A1622" CornerRadius="4" Margin="0,0,0,10">
             <StackPanel Orientation="Horizontal" Margin="10">
-                <!-- Mode Selection Buttons -->
-                <ToggleButton Content="Dane faktury" 
-              Width="110" Height="30" Margin="5" 
-              IsChecked="{Binding EditMode, ConverterParameter=InvoiceDetails, Converter={StaticResource StringEqualsConverter}}"
-              Command="{Binding SwitchModeCommand}" 
-              CommandParameter="InvoiceDetails"
-              Style="{StaticResource ModeToggleButtonStyle}"
-              ToolTip="Przejdź do edycji danych faktury (Ctrl+1)"/>
-
-                <ToggleButton Content="Pozycje" 
-              Width="110" Height="30" Margin="5" 
-              IsChecked="{Binding EditMode, ConverterParameter=Items, Converter={StaticResource StringEqualsConverter}}"
-              Command="{Binding SwitchModeCommand}" 
-              CommandParameter="Items"
-              Style="{StaticResource ModeToggleButtonStyle}"
-              ToolTip="Przejdź do edycji pozycji faktury (Ctrl+2)"/>
-
-                <ToggleButton Content="Płatność" 
-              Width="110" Height="30" Margin="5" 
-              IsChecked="{Binding EditMode, ConverterParameter=Payment, Converter={StaticResource StringEqualsConverter}}"
-              Command="{Binding SwitchModeCommand}" 
-              CommandParameter="Payment"
-              Style="{StaticResource ModeToggleButtonStyle}"
-              ToolTip="Przejdź do edycji płatności (Ctrl+3)"/>
-
                 <Button Content="Zapisz fakturę" 
-        Width="120" Height="30" Margin="5,5,5,5" 
-        HorizontalAlignment="Right"
-        Command="{Binding SaveInvoiceCommand}"
-        Style="{StaticResource ActionButtonStyle}"
-        ToolTip="Zapisz fakturę (Ctrl+S)"/>
+                Width="140" Height="40" Margin="5,5,5,5" 
+                HorizontalAlignment="Right"
+                Command="{Binding SaveInvoiceCommand}"
+                Style="{StaticResource ActionButtonStyle}"
+                ToolTip="Zapisz fakturę (Ctrl+S)"/>
 
                 <Button Content="Eksportuj PDF" 
-        Width="120" Height="30" Margin="5,5,5,5" 
-        HorizontalAlignment="Right"
-        Command="{Binding ExportPdfCommand}"
-        Style="{StaticResource ActionButtonStyle}"
-        ToolTip="Eksportuj fakturę do pliku PDF (Ctrl+P)"/>
+                Width="140" Height="40" Margin="5,5,5,5" 
+                HorizontalAlignment="Right"
+                Command="{Binding ExportPdfCommand}"
+                Style="{StaticResource ActionButtonStyle}"
+                ToolTip="Eksportuj fakturę do pliku PDF (Ctrl+P)"/>
             </StackPanel>
         </Border>
 
@@ -98,6 +80,8 @@
                                 <TextBlock Text="Dane sprzedawcy:" FontWeight="Bold" Margin="0,0,0,5"/>
                                 <TextBlock Text="{Binding CompanyName}" FontWeight="SemiBold"/>
                                 <TextBlock Text="{Binding CompanyAddress}"/>
+                                <TextBlock Text="{Binding CompanyPhone}"/>
+                                <TextBlock Text="{Binding CompanyEmail}"/>
                                 <TextBlock Text="{Binding CompanyNIP, StringFormat='NIP: {0}'}"/>
                             </StackPanel>
                         </Border>
@@ -121,10 +105,7 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="Faktura nr:" VerticalAlignment="Center"/>
                                     <TextBox Grid.Column="1" Text="{Binding CurrentInvoice.InvoiceNumber}" 
-                                             Style="{StaticResource EditableFieldStyle}"
-                                             Visibility="{Binding EditMode, ConverterParameter=InvoiceDetails, Converter={StaticResource StringEqualsToVisibilityConverter}}"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding CurrentInvoice.InvoiceNumber}" 
-                                               Visibility="{Binding EditMode, ConverterParameter=InvoiceDetails, Converter={StaticResource StringNotEqualsToVisibilityConverter}}"/>
+                                             Style="{StaticResource EditableFieldStyle}"/>
                                 </Grid>
 
                                 <Grid Margin="0,5,0,5">
@@ -134,10 +115,7 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="Data wystawienia:" VerticalAlignment="Center"/>
                                     <DatePicker Grid.Column="1" SelectedDate="{Binding CurrentInvoice.InvoiceDate}" 
-                                                Style="{StaticResource EditableDateStyle}"
-                                                Visibility="{Binding EditMode, ConverterParameter=InvoiceDetails, Converter={StaticResource StringEqualsToVisibilityConverter}}"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding CurrentInvoice.InvoiceDate, StringFormat=dd.MM.yyyy}" 
-                                               Visibility="{Binding EditMode, ConverterParameter=InvoiceDetails, Converter={StaticResource StringNotEqualsToVisibilityConverter}}"/>
+                                                Style="{StaticResource EditableDateStyle}"/>
                                 </Grid>
 
                                 <Grid Margin="0,5,0,5">
@@ -147,10 +125,7 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="Data sprzedaży:" VerticalAlignment="Center"/>
                                     <DatePicker Grid.Column="1" SelectedDate="{Binding CurrentInvoice.SellingDate}" 
-                                                Style="{StaticResource EditableDateStyle}"
-                                                Visibility="{Binding EditMode, ConverterParameter=InvoiceDetails, Converter={StaticResource StringEqualsToVisibilityConverter}}"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding CurrentInvoice.SellingDate, StringFormat=dd.MM.yyyy}" 
-                                               Visibility="{Binding EditMode, ConverterParameter=InvoiceDetails, Converter={StaticResource StringNotEqualsToVisibilityConverter}}"/>
+                                                Style="{StaticResource EditableDateStyle}"/>
                                 </Grid>
 
                                 <Grid Margin="0,5,0,5">
@@ -159,11 +134,18 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="Termin płatności:" VerticalAlignment="Center"/>
-                                    <DatePicker Grid.Column="1" SelectedDate="{Binding CurrentInvoice.DueDate}" 
-                                                Style="{StaticResource EditableDateStyle}"
-                                                Visibility="{Binding EditMode, ConverterParameter=Payment, Converter={StaticResource StringEqualsToVisibilityConverter}}"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding CurrentInvoice.DueDate, StringFormat=dd.MM.yyyy}" 
-                                               Visibility="{Binding EditMode, ConverterParameter=Payment, Converter={StaticResource StringNotEqualsToVisibilityConverter}}"/>
+                                    <StackPanel Grid.Column="1" Orientation="Vertical">
+                                        <ComboBox SelectedItem="{Binding SelectedPaymentDeadline}" 
+                                                  ItemsSource="{Binding PaymentDeadlineOptions}"
+                                                  SelectionChanged="PaymentDeadline_SelectionChanged"
+                                                  Style="{StaticResource ClientComboBoxStyle}"
+                                                  Name="PaymentDeadlineComboBox"
+                                                  Width="200" HorizontalAlignment="Left"/>
+                                        <DatePicker SelectedDate="{Binding CurrentInvoice.DueDate}" 
+                                                    Style="{StaticResource EditableDateStyle}"
+                                                    Margin="0,5,0,0"
+                                                    Visibility="{Binding IsCustomDeadline, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                    </StackPanel>
                                 </Grid>
                             </StackPanel>
                         </Border>
@@ -176,9 +158,8 @@
                                 <ComboBox ItemsSource="{Binding AvailableClients}" 
                                           SelectedItem="{Binding CurrentInvoice.Client}"
                                           DisplayMemberPath="Name"
-                                          Style="{StaticResource ClientComboBoxStyle}"
-                                          Visibility="{Binding EditMode, ConverterParameter=InvoiceDetails, Converter={StaticResource StringEqualsToVisibilityConverter}}"/>
-                                <StackPanel Visibility="{Binding EditMode, ConverterParameter=InvoiceDetails, Converter={StaticResource StringNotEqualsToVisibilityConverter}}">
+                                          Style="{StaticResource ClientComboBoxStyle}"/>
+                                <StackPanel Margin="0,10,0,0" Visibility="{Binding CurrentInvoice.Client, Converter={StaticResource NullToVisibilityConverter}}">
                                     <TextBlock Text="{Binding CurrentInvoice.Client.Name}" FontWeight="SemiBold"/>
                                     <TextBlock Text="{Binding CurrentInvoice.Client.Address}"/>
                                     <TextBlock Text="{Binding CurrentInvoice.Client.TaxID, StringFormat='NIP: {0}'}"/>
@@ -194,72 +175,87 @@
                             <!-- Table Header -->
                             <Grid Background="#3E6CB2" Margin="10,5">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="40"/>
+                                    <ColumnDefinition Width="30"/>
+                                    <!-- Lp. -->
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="80"/>
+                                    <!-- Opis -->
+                                    <ColumnDefinition Width="90"/>
+                                    <!-- Ilość -->
+                                    <ColumnDefinition Width="110"/>
+                                    <!-- Cena jednostkowa -->
                                     <ColumnDefinition Width="100"/>
-                                    <ColumnDefinition Width="80"/>
+                                    <!-- Wartość netto -->
+                                    <ColumnDefinition Width="70"/>
+                                    <!-- VAT % -->
                                     <ColumnDefinition Width="100"/>
+                                    <!-- Kwota VAT -->
+                                    <ColumnDefinition Width="100"/>
+                                    <!-- Wartość brutto -->
                                     <ColumnDefinition Width="40"/>
+                                    <!-- Delete -->
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="Lp." Foreground="White" FontWeight="SemiBold"/>
                                 <TextBlock Grid.Column="1" Text="Opis" Foreground="White" FontWeight="SemiBold"/>
                                 <TextBlock Grid.Column="2" Text="Ilość" Foreground="White" FontWeight="SemiBold"/>
-                                <TextBlock Grid.Column="3" Text="Cena netto" Foreground="White" FontWeight="SemiBold"/>
-                                <TextBlock Grid.Column="4" Text="VAT" Foreground="White" FontWeight="SemiBold"/>
-                                <TextBlock Grid.Column="5" Text="Wartość" Foreground="White" FontWeight="SemiBold"/>
-                                <TextBlock Grid.Column="6" Text="" Foreground="White" FontWeight="SemiBold"/>
+                                <TextBlock Grid.Column="3" Text="Cena jedn." Foreground="White" FontWeight="SemiBold"/>
+                                <TextBlock Grid.Column="4" Text="Netto" Foreground="White" FontWeight="SemiBold"/>
+                                <TextBlock Grid.Column="5" Text="VAT" Foreground="White" FontWeight="SemiBold"/>
+                                <TextBlock Grid.Column="6" Text="Kwota VAT" Foreground="White" FontWeight="SemiBold"/>
+                                <TextBlock Grid.Column="7" Text="Brutto" Foreground="White" FontWeight="SemiBold"/>
+                                <TextBlock Grid.Column="8" Text="" Foreground="White" FontWeight="SemiBold"/>
                             </Grid>
 
                             <!-- Items -->
-                            <ItemsControl ItemsSource="{Binding CurrentInvoice.Items}">
+                            <ItemsControl ItemsSource="{Binding InvoiceItems}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Grid Margin="10,5" Background="{Binding IsAlternate, Converter={StaticResource BoolToBackgroundConverter}}">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="40"/>
+                                                <ColumnDefinition Width="30"/>
+                                                <!-- Lp. -->
                                                 <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="80"/>
+                                                <!-- Opis -->
+                                                <ColumnDefinition Width="90"/>
+                                                <!-- Ilość -->
+                                                <ColumnDefinition Width="110"/>
+                                                <!-- Cena jednostkowa -->
                                                 <ColumnDefinition Width="100"/>
-                                                <ColumnDefinition Width="80"/>
+                                                <!-- Wartość netto -->
+                                                <ColumnDefinition Width="70"/>
+                                                <!-- VAT % -->
                                                 <ColumnDefinition Width="100"/>
+                                                <!-- Kwota VAT -->
+                                                <ColumnDefinition Width="100"/>
+                                                <!-- Wartość brutto -->
                                                 <ColumnDefinition Width="40"/>
+                                                <!-- Delete -->
                                             </Grid.ColumnDefinitions>
 
                                             <TextBlock Grid.Column="0" Text="{Binding Index}" VerticalAlignment="Center"/>
 
                                             <TextBox Grid.Column="1" Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" 
-                                                     Style="{StaticResource EditableFieldStyle}" VerticalAlignment="Center"
-                                                     Visibility="{Binding DataContext.EditMode, RelativeSource={RelativeSource AncestorType=ItemsControl}, ConverterParameter=Items, Converter={StaticResource StringEqualsToVisibilityConverter}}"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding Description}" VerticalAlignment="Center"
-                                                     Visibility="{Binding DataContext.EditMode, RelativeSource={RelativeSource AncestorType=ItemsControl}, ConverterParameter=Items, Converter={StaticResource StringNotEqualsToVisibilityConverter}}"/>
+                                                     Style="{StaticResource EditableFieldStyle}" VerticalAlignment="Center"/>
 
                                             <TextBox Grid.Column="2" Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}" 
-                                                     Style="{StaticResource EditableFieldStyle}" VerticalAlignment="Center"
-                                                     Visibility="{Binding DataContext.EditMode, RelativeSource={RelativeSource AncestorType=ItemsControl}, ConverterParameter=Items, Converter={StaticResource StringEqualsToVisibilityConverter}}"/>
-                                            <TextBlock Grid.Column="2" Text="{Binding Quantity}" VerticalAlignment="Center"
-                                                     Visibility="{Binding DataContext.EditMode, RelativeSource={RelativeSource AncestorType=ItemsControl}, ConverterParameter=Items, Converter={StaticResource StringNotEqualsToVisibilityConverter}}"/>
+                                                     Style="{StaticResource EditableFieldStyle}" VerticalAlignment="Center"/>
 
                                             <TextBox Grid.Column="3" Text="{Binding NetPrice, UpdateSourceTrigger=PropertyChanged, StringFormat=N2}" 
-                                                     Style="{StaticResource EditableFieldStyle}" VerticalAlignment="Center"
-                                                     Visibility="{Binding DataContext.EditMode, RelativeSource={RelativeSource AncestorType=ItemsControl}, ConverterParameter=Items, Converter={StaticResource StringEqualsToVisibilityConverter}}"/>
-                                            <TextBlock Grid.Column="3" Text="{Binding NetPrice, StringFormat=N2}" VerticalAlignment="Center"
-                                                     Visibility="{Binding DataContext.EditMode, RelativeSource={RelativeSource AncestorType=ItemsControl}, ConverterParameter=Items, Converter={StaticResource StringNotEqualsToVisibilityConverter}}"/>
+                                                     Style="{StaticResource EditableFieldStyle}" VerticalAlignment="Center"/>
 
-                                            <ComboBox Grid.Column="4" SelectedItem="{Binding VatRate}" 
+                                            <TextBlock Grid.Column="4" Text="{Binding TotalNet, StringFormat=N2}" VerticalAlignment="Center"/>
+
+                                            <ComboBox Grid.Column="5" SelectedItem="{Binding VatRate}" 
                                                       ItemsSource="{Binding DataContext.VatRates, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                      Style="{StaticResource VatRateComboBoxStyle}" VerticalAlignment="Center"
-                                                      Visibility="{Binding DataContext.EditMode, RelativeSource={RelativeSource AncestorType=ItemsControl}, ConverterParameter=Items, Converter={StaticResource StringEqualsToVisibilityConverter}}"/>
-                                            <TextBlock Grid.Column="4" Text="{Binding VatRate}" VerticalAlignment="Center"
-                                                     Visibility="{Binding DataContext.EditMode, RelativeSource={RelativeSource AncestorType=ItemsControl}, ConverterParameter=Items, Converter={StaticResource StringNotEqualsToVisibilityConverter}}"/>
+                                                      Style="{StaticResource VatRateComboBoxStyle}" VerticalAlignment="Center"/>
 
-                                            <TextBlock Grid.Column="5" Text="{Binding TotalGross, StringFormat=N2}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="6" Text="{Binding TotalVat, StringFormat=N2}" VerticalAlignment="Center"/>
 
-                                            <Button Grid.Column="6" Content="✕" 
+                                            <TextBlock Grid.Column="7" Text="{Binding TotalGross, StringFormat=N2}" VerticalAlignment="Center"/>
+
+                                            <Button Grid.Column="8" Content="✕" 
                                                     Command="{Binding DataContext.RemoveItemCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" 
                                                     CommandParameter="{Binding}"
-                                                    Style="{StaticResource RemoveButtonStyle}"
-                                                    Visibility="{Binding DataContext.EditMode, RelativeSource={RelativeSource AncestorType=ItemsControl}, ConverterParameter=Items, Converter={StaticResource StringEqualsToVisibilityConverter}}"/>
+                                                    Style="{StaticResource RemoveButtonStyle}"/>
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
@@ -269,8 +265,7 @@
                             <Button Content="+ Dodaj pozycję" 
                                     Command="{Binding AddItemCommand}"
                                     Style="{StaticResource AddItemButtonStyle}"
-                                    ToolTip="Dodaj nową pozycję (Ctrl+N)"
-                                    Visibility="{Binding EditMode, ConverterParameter=Items, Converter={StaticResource StringEqualsToVisibilityConverter}}"/>
+                                    ToolTip="Dodaj nową pozycję (Ctrl+N)"/>
                         </StackPanel>
                     </Border>
 
@@ -283,8 +278,7 @@
 
                         <!-- Payment Method -->
                         <Border Grid.Column="0" Background="#F8F8F8" BorderBrush="#DDDDDD" 
-                                BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,10,0"
-                                Visibility="{Binding EditMode, ConverterParameter=Payment, Converter={StaticResource StringEqualsToVisibilityConverter}}">
+                                BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,10,0">
                             <StackPanel>
                                 <TextBlock Text="Sposób płatności:" FontWeight="Bold" Margin="0,0,0,5"/>
                                 <ComboBox ItemsSource="{Binding PaymentMethods}" 

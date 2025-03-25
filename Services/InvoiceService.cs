@@ -130,24 +130,25 @@ namespace InvoicingApp.Services
             // Get all invoices asynchronously
             var allInvoices = await _invoiceStorage.GetAllAsync();
 
-            // Default format: FV/001/YYYY
+            // Format: FV/NNN/MM/YYYY
             string prefix = "FV";
             int sequenceNumber = 1;
+            int month = DateTime.Now.Month;
             int year = DateTime.Now.Year;
 
             if (allInvoices.Any())
             {
-                // Extract the sequence number from the latest invoice
-                var latestInvoice = allInvoices
-                    .Where(i => i.InvoiceNumber.Contains($"/{year}"))
+                // Extract the sequence number from the latest invoice in the current month
+                var currentMonthInvoices = allInvoices
+                    .Where(i => i.InvoiceNumber.Contains($"/{month.ToString("00")}/{year}"))
                     .OrderByDescending(i => i.InvoiceDate)
-                    .FirstOrDefault();
+                    .ToList();
 
-                if (latestInvoice != null)
+                if (currentMonthInvoices.Any())
                 {
                     // Parse the sequence number
-                    var match = Regex.Match(latestInvoice.InvoiceNumber, @"(\w+)/(\d+)/(\d+)");
-                    if (match.Success && match.Groups.Count >= 3)
+                    var match = Regex.Match(currentMonthInvoices.First().InvoiceNumber, @"(\w+)/(\d+)/(\d+)/(\d+)");
+                    if (match.Success && match.Groups.Count >= 5)
                     {
                         prefix = match.Groups[1].Value;
                         if (int.TryParse(match.Groups[2].Value, out int lastSequence))
@@ -158,8 +159,8 @@ namespace InvoicingApp.Services
                 }
             }
 
-            // Format: FV/001/2025
-            return $"{prefix}/{sequenceNumber:D3}/{year}";
+            // Format: FV/001/03/2025
+            return $"{prefix}/{sequenceNumber:D3}/{month:D2}/{year}";
         }
 
         public string GenerateNextInvoiceNumber()
